@@ -1,0 +1,15 @@
+﻿  Blinky.cpp
+  Border.cpp
+  Coins.cpp
+  Booster.cpp
+  Field.cpp
+  Fruits.cpp
+  GameController.cpp
+  Ghosts.cpp
+  Map.cpp
+  Objects.cpp
+  Pacman.cpp
+  Source.cpp
+  Создание кода...
+c:\users\admin\source\repos\pacman\ghosts.cpp(300): warning C4715: Ghosts::FindTargetDirect: значение возвращается не при всех путях выполнения
+  PacMan.vcxproj -> C:\Users\Admin\source\repos\x64\Debug\PacMan.exe
