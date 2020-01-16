@@ -13,7 +13,7 @@ GameController::~GameController()
 
 void GameController::AddFruit(std::pair<char, int> fruit)
 {
-	if (fruits_.size() >= amount)
+	if (static_cast<int>(fruits_.size()) >= amount)
 	{
 		fruits_.pop_back();
 	}

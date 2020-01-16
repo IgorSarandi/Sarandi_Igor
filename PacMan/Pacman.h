@@ -1,10 +1,10 @@
 #pragma once
-#include "Objects.h"
+#include "MovingObjects.h"
 #include <string>
 #include <memory>
 
 class Pacman :
-	public Objects
+	public MovingObjects
 {
 public:
 	Pacman(const Pacman&) = delete;
@@ -27,11 +27,6 @@ public:
 	static void SetHealth(const int);
 
 
-	static int GetSpeed();
-
-	static void SetSpeed(const int);
-
-
 	static bool GetCheckLevel();
 
 	static void SetCheckLevel(const bool = false, const bool = false);
@@ -50,7 +45,6 @@ private:
 
 	static int score_;
 	static int health_;
-	static int speed_;
 	static bool checklvl_;
 	static bool energy_;
 	static std::pair<int, int> startposition_;

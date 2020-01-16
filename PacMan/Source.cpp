@@ -10,8 +10,6 @@
 #include "Border.h"
 #include "Coins.h"
 #include "Field.h"
-//#include "Objects.h"
-//#include "Ghosts.h"
 #include "Map.h"
 #include "Pacman.h"
 #include "Booster.h"
@@ -64,7 +62,7 @@ int main()
 
 		while (!Pacman::GetCheckLevel())
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(200));
+			//std::this_thread::sleep_for(std::chrono::milliseconds(200));
 			string key = Input();
 			Logic(match, key);
 			Draw(match.second);
@@ -134,6 +132,7 @@ pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>> Initialization()
 	}
 
 	Pacman& pacman = Pacman::getSingleton();
+	pacman.SetSpeed(10);;
 
 	if (table[pacman.GetPosition().first][pacman.GetPosition().second] == (*_coins.begin())->Figure())
 	{
@@ -176,11 +175,13 @@ pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>> Initialization()
 	}
 
 	Blinky* blinky = new Blinky();
-	blinky->SetDoorStatus(true);
+	blinky->SetSpeed(8);
+	blinky->SetDoorLock(false);
 	blinky->SetStartPos(11, 14);
 	blinky->SetPosition(blinky->GetStartPos().first, blinky->GetStartPos().second);
 	blinky->SetStatus("SCATTER");
 	blinky->SetDirection("LEFT");
+	blinky->SetLowField((*_fields.begin())->Figure());
 	blinky->SetTargetField(std::make_pair(0, WIDTH - 1));
 	table[blinky->GetPosition().first][blinky->GetPosition().second] = blinky->Figure();
 	_ghosts.push_back(blinky);
@@ -265,309 +266,33 @@ void Logic(pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>>& obje
 		return false;
 	};
 
-	if (key == "UP")
+	_Pacman->UpdateDeltaTime();
+	if (_Pacman->Update())
 	{
-		int k = _Pacman->GetPosition().first;
-		int m = _Pacman->GetPosition().second;
-		obj = objects.second[k - 1][m];
-
-		if (obj == (*_fields.begin())->Figure())
+		if (key == "UP")
 		{
-			k = _Pacman->GetPosition().first - 1;
-			m = _Pacman->GetPosition().second;
-			_Pacman->SetPosition(k, m);
-			objects.second[k][m] = _Pacman->Figure();
-			objects.second[k + 1][m] = (*_fields.begin())->Figure();
-		}
-		//чеканные монеты
-		else if (obj == (*_coins.begin())->Figure())
-		{
-			k = _Pacman->GetPosition().first - 1;
-			m = _Pacman->GetPosition().second;
-			_Pacman->SetPosition(k, m);
-			objects.second[k][m] = _Pacman->Figure();
-			objects.second[k + 1][m] = (*_fields.begin())->Figure();
-			_Pacman->Eat(10);
-			totalcoins++;
+			int k = _Pacman->GetPosition().first;
+			int m = _Pacman->GetPosition().second;
+			obj = objects.second[k - 1][m];
 
-			for (auto a : _coins)
-			{
-				if (a->GetPosition() == _Pacman->GetPosition())
-				{
-					auto it = std::find(objects.first[1].begin(), objects.first[1].end(), a);
-					(*it)->Destroy();
-					objects.first[1].erase(it);
-				}
-			}
-		}
-		//energizer
-		else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
-		{
-			k = _Pacman->GetPosition().first - 1;
-			m = _Pacman->GetPosition().second;
-			_Pacman->SetPosition(k, m);
-			objects.second[k][m] = _Pacman->Figure();
-			objects.second[k + 1][m] = (*_fields.begin())->Figure();
-			_Pacman->Eat(50);
-
-			for (auto a : _booster)
-			{
-				if (a->GetPosition() == _Pacman->GetPosition())
-				{
-					auto it = std::find(objects.first[4].begin(), objects.first[4].end(), a);
-					(*it)->Destroy();
-					objects.first[4].erase(it);
-				}
-			}
-			for (auto a : _ghosts)
-			{
-				a->SetStatus("FRIGHTENED");
-				objects.second[a->GetPosition().first][a->GetPosition().second] = a->Figure();
-			}
-		}
-		//стены
-		else if (obj == (*_borders.begin())->Figure())
-		{
-			objects.second[k][m] = _Pacman->Figure();
-		}
-		//враги
-		else if (lambdaghost())
-		{
-			k = _Pacman->GetPosition().first - 1;
-			m = _Pacman->GetPosition().second;
-			for (auto a : _ghosts)
-			{
-				int x = a->GetPosition().first;
-				int y = a->GetPosition().second;
-
-				if (k == x && m == y && a->GetStatus() == 3)
-				{
-					_Pacman->SetPosition(k, m);
-					objects.second[k][m] = _Pacman->Figure();
-					objects.second[k + 1][m] = (*_fields.begin())->Figure();
-					_Pacman->Eat(200);
-
-					x = a->GetStartPos().first;
-					y = a->GetStartPos().second;
-					a->SetPosition(x, y);
-					a->SetStatus("CHASE");
-					a->SetDoorStatus(false);
-					a->SetDirection("UP");
-					objects.second[x][y] = a->Figure();
-				}
-				else if (k == x && m == y && a->GetStatus() != 3)
-				{
-					DecreaseHP();
-					objects.second[k][m] = (*_fields.begin())->Figure();
-					objects.second[k + 1][m] = (*_fields.begin())->Figure();
-					int q = _Pacman->GetStartPosition().first;
-					int w = _Pacman->GetStartPosition().second;
-					_Pacman->SetPosition(q, w);
-					objects.second[q][w] = _Pacman->Figure();
-					for (auto a : _ghosts)
-					{
-						int x = a->GetStartPos().first;
-						int y = a->GetStartPos().second;
-						a->SetPosition(x, y);
-						a->SetStatus("HOUSE");
-						a->SetDoorStatus(false);
-						a->SetDirection("UP");
-						objects.second[x][y] = a->Figure();
-						return;
-					}
-				}
-			}
-		}
-		//фрукты
-		else if (lambdafruit())
-		{
-			for (auto a : objects.first[6])
-			{
-				if (a != nullptr && obj == a->Figure())
-				{
-					Fruits* fr = dynamic_cast<Fruits*>(a);
-					k = _Pacman->GetPosition().first - 1;
-					m = _Pacman->GetPosition().second;
-					if (std::make_pair(k, m) != a->GetPosition()) continue;
-
-					_Pacman->SetPosition(k, m);
-					objects.second[k][m] = _Pacman->Figure();
-					objects.second[k + 1][m] = (*_fields.begin())->Figure();
-					_Pacman->Eat(fr->CalculateScore(currentlevel));
-					gc.AddFruit(fr->Figure());
-					fr->Destroy();
-					auto it = std::find(objects.first[6].begin(), objects.first[6].end(), a);
-					*it = nullptr;
-					break;
-				}
-			}
-		}
-	}
-	else if (key == "DOWN")
-	{
-		int k = _Pacman->GetPosition().first;
-		int m = _Pacman->GetPosition().second;
-		obj = objects.second[k + 1][m];
-
-		if (obj == (*_fields.begin())->Figure())
-		{
-			k = _Pacman->GetPosition().first + 1;
-			m = _Pacman->GetPosition().second;
-			_Pacman->SetPosition(k, m);
-			objects.second[k][m] = _Pacman->Figure();
-			objects.second[k - 1][m] = (*_fields.begin())->Figure();
-		}
-		//чеканные монеты
-		else if (obj == (*_coins.begin())->Figure())
-		{
-			k = _Pacman->GetPosition().first + 1;
-			m = _Pacman->GetPosition().second;
-			_Pacman->SetPosition(k, m);
-			objects.second[k][m] = _Pacman->Figure();
-			objects.second[k - 1][m] = (*_fields.begin())->Figure();
-			_Pacman->Eat(10);
-			totalcoins++;
-
-			for (auto a : _coins)
-			{
-				if (a->GetPosition() == _Pacman->GetPosition())
-				{
-					auto it = std::find(objects.first[1].begin(), objects.first[1].end(), a);
-					(*it)->Destroy();
-					objects.first[1].erase(it);
-				}
-			}
-		}
-		//energizer
-		else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
-		{
-			k = _Pacman->GetPosition().first + 1;
-			m = _Pacman->GetPosition().second;
-			_Pacman->SetPosition(k, m);
-			objects.second[k][m] = _Pacman->Figure();
-			objects.second[k - 1][m] = (*_fields.begin())->Figure();
-			_Pacman->Eat(50);
-
-			for (auto a : _booster)
-			{
-				if (a->GetPosition() == _Pacman->GetPosition())
-				{
-					auto it = std::find(objects.first[4].begin(), objects.first[4].end(), a);
-					(*it)->Destroy();
-					objects.first[4].erase(it);
-				}
-			}
-			for (auto a : _ghosts)
-			{
-				a->SetStatus("FRIGHTENED");
-				objects.second[a->GetPosition().first][a->GetPosition().second] = a->Figure();
-			}
-		}
-		//стены
-		else if (obj == (*_borders.begin())->Figure())
-		{
-			objects.second[k][m] = _Pacman->Figure();
-		}
-		//враги
-		else if (lambdaghost())
-		{
-			k = _Pacman->GetPosition().first + 1;
-			m = _Pacman->GetPosition().second;
-			for (auto a : _ghosts)
-			{
-				int x = a->GetPosition().first;
-				int y = a->GetPosition().second;
-
-				if (k == x && m == y && a->GetStatus() == 3)
-				{
-					_Pacman->SetPosition(k, m);
-					objects.second[k][m] = _Pacman->Figure();
-					objects.second[k - 1][m] = (*_fields.begin())->Figure();
-					_Pacman->Eat(200);
-
-					x = a->GetStartPos().first;
-					y = a->GetStartPos().second;
-					a->SetPosition(x, y);
-					a->SetStatus("CHASE");
-					a->SetDoorStatus(false);
-					a->SetDirection("UP");
-					objects.second[x][y] = a->Figure();
-				}
-				else if (k == x && m == y && a->GetStatus() != 3)
-				{
-					DecreaseHP();
-					objects.second[k][m] = (*_fields.begin())->Figure();
-					objects.second[k - 1][m] = (*_fields.begin())->Figure();
-					int q = _Pacman->GetStartPosition().first;
-					int w = _Pacman->GetStartPosition().second;
-					_Pacman->SetPosition(q, w);
-					objects.second[q][w] = _Pacman->Figure();
-					for (auto a : _ghosts)
-					{
-						int x = a->GetStartPos().first;
-						int y = a->GetStartPos().second;
-						a->SetPosition(x, y);
-						a->SetStatus("HOUSE");
-						a->SetDoorStatus(false);
-						a->SetDirection("UP");
-						objects.second[x][y] = a->Figure();
-						return;
-					}
-				}
-			}
-		}
-		//фрукты
-		else if (lambdafruit())
-		{
-			for (auto a : objects.first[6])
-			{
-				if (a != nullptr && obj == a->Figure())
-				{
-					Fruits* fr = dynamic_cast<Fruits*>(a);
-					k = _Pacman->GetPosition().first + 1;
-					m = _Pacman->GetPosition().second;
-					if (std::make_pair(k, m) != a->GetPosition()) continue;
-
-					_Pacman->SetPosition(k, m);
-					objects.second[k][m] = _Pacman->Figure();
-					objects.second[k - 1][m] = (*_fields.begin())->Figure();
-					_Pacman->Eat(fr->CalculateScore(currentlevel));
-					gc.AddFruit(fr->Figure());
-					fr->Destroy();
-					auto it = std::find(objects.first[6].begin(), objects.first[6].end(), a);
-					*it = nullptr;
-					break;
-				}
-			}
-		}
-	}
-	else if (key == "LEFT")
-	{
-		int k = _Pacman->GetPosition().first;
-		int m = _Pacman->GetPosition().second;
-		
-		if (m)
-		{
-			obj = objects.second[k][m - 1];
-
-
-			//проход по полям
 			if (obj == (*_fields.begin())->Figure())
 			{
-				k = _Pacman->GetPosition().first;
-				m = _Pacman->GetPosition().second - 1;
+				k = _Pacman->GetPosition().first - 1;
+				m = _Pacman->GetPosition().second;
 				_Pacman->SetPosition(k, m);
+				_Pacman->SetSpeed(10);;
 				objects.second[k][m] = _Pacman->Figure();
-				objects.second[k][m + 1] = (*_fields.begin())->Figure();
+				objects.second[k + 1][m] = (*_fields.begin())->Figure();
 			}
 			//чеканные монеты
 			else if (obj == (*_coins.begin())->Figure())
 			{
-				k = _Pacman->GetPosition().first;
-				m = _Pacman->GetPosition().second - 1;
+				k = _Pacman->GetPosition().first - 1;
+				m = _Pacman->GetPosition().second;
 				_Pacman->SetPosition(k, m);
+				_Pacman->SetSpeed(7);;
 				objects.second[k][m] = _Pacman->Figure();
-				objects.second[k][m + 1] = (*_fields.begin())->Figure();
+				objects.second[k + 1][m] = (*_fields.begin())->Figure();
 				_Pacman->Eat(10);
 				totalcoins++;
 
@@ -584,11 +309,12 @@ void Logic(pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>>& obje
 			//energizer
 			else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
 			{
-				k = _Pacman->GetPosition().first;
-				m = _Pacman->GetPosition().second - 1;
+				k = _Pacman->GetPosition().first - 1;
+				m = _Pacman->GetPosition().second;
 				_Pacman->SetPosition(k, m);
+				_Pacman->SetSpeed(7);;
 				objects.second[k][m] = _Pacman->Figure();
-				objects.second[k][m + 1] = (*_fields.begin())->Figure();
+				objects.second[k + 1][m] = (*_fields.begin())->Figure();
 				_Pacman->Eat(50);
 
 				for (auto a : _booster)
@@ -614,25 +340,27 @@ void Logic(pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>>& obje
 			//враги
 			else if (lambdaghost())
 			{
-				k = _Pacman->GetPosition().first;
-				m = _Pacman->GetPosition().second - 1;
+				k = _Pacman->GetPosition().first - 1;
+				m = _Pacman->GetPosition().second;
 				for (auto a : _ghosts)
 				{
 					int x = a->GetPosition().first;
 					int y = a->GetPosition().second;
+					a->SetSpeed(8);
 
 					if (k == x && m == y && a->GetStatus() == 3)
 					{
 						_Pacman->SetPosition(k, m);
+						_Pacman->SetSpeed(10);;
 						objects.second[k][m] = _Pacman->Figure();
-						objects.second[k][m + 1] = (*_fields.begin())->Figure();
+						objects.second[k + 1][m] = (*_fields.begin())->Figure();
 						_Pacman->Eat(200);
 
-						x = a->GetStartPos().first;
+						x = a->GetStartPos().first + 4;
 						y = a->GetStartPos().second;
 						a->SetPosition(x, y);
 						a->SetStatus("CHASE");
-						a->SetDoorStatus(false);
+						a->SetDoorLock(true);
 						a->SetDirection("UP");
 						objects.second[x][y] = a->Figure();
 					}
@@ -640,21 +368,21 @@ void Logic(pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>>& obje
 					{
 						DecreaseHP();
 						objects.second[k][m] = (*_fields.begin())->Figure();
-						objects.second[k][m + 1] = (*_fields.begin())->Figure();
+						objects.second[k + 1][m] = (*_fields.begin())->Figure();
 						int q = _Pacman->GetStartPosition().first;
 						int w = _Pacman->GetStartPosition().second;
 						_Pacman->SetPosition(q, w);
+						_Pacman->SetSpeed(7);;
 						objects.second[q][w] = _Pacman->Figure();
 						for (auto a : _ghosts)
 						{
 							int x = a->GetStartPos().first;
 							int y = a->GetStartPos().second;
 							a->SetPosition(x, y);
-							a->SetStatus("HOUSE");
-							a->SetDoorStatus(false);
-							a->SetDirection("UP");
+							a->SetStatus("SCATTER");
+							a->SetDoorLock(true);
+							a->SetDirection("LEFT");
 							objects.second[x][y] = a->Figure();
-							return;
 						}
 					}
 				}
@@ -667,13 +395,14 @@ void Logic(pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>>& obje
 					if (a != nullptr && obj == a->Figure())
 					{
 						Fruits* fr = dynamic_cast<Fruits*>(a);
-						k = _Pacman->GetPosition().first;
-						m = _Pacman->GetPosition().second - 1;
+						k = _Pacman->GetPosition().first - 1;
+						m = _Pacman->GetPosition().second;
 						if (std::make_pair(k, m) != a->GetPosition()) continue;
 
 						_Pacman->SetPosition(k, m);
+						_Pacman->SetSpeed(7);;
 						objects.second[k][m] = _Pacman->Figure();
-						objects.second[k][m + 1] = (*_fields.begin())->Figure();
+						objects.second[k + 1][m] = (*_fields.begin())->Figure();
 						_Pacman->Eat(fr->CalculateScore(currentlevel));
 						gc.AddFruit(fr->Figure());
 						fr->Destroy();
@@ -684,85 +413,30 @@ void Logic(pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>>& obje
 				}
 			}
 		}
-		else
+		else if (key == "DOWN")
 		{
-			m = WIDTH - 1;
-			obj = objects.second[k][m];
-			//проход через тоннель
-			if (obj == (*_fields.begin())->Figure())
-			{
-				_Pacman->SetPosition(k, m);
-				objects.second[k][m] = _Pacman->Figure();
-				objects.second[k][0] = (*_fields.begin())->Figure();
-				//k = _Pacman->GetPosition().first;
-				//m = Y - 2;
-				//pair<char, int> new_obj = objects.second[k][m];
-				//if (new_obj == (*_fields.begin())->Figure())
-				//{
-				//	_Head->SetPosition(k, m);
-				//	objects.second[k][m] = _Head->Figure();
-				//	objects.second[k][1] = (*_fields.begin())->Figure();
-				//}
-				//else if (new_obj == (*_fruits.begin())->Figure())
-				//{
-				//	_Head->SetPosition(k, m);
-				//	objects.second[k][m] = _Head->Figure();
-
-				//	Body* body = new Body();
-				//	objects.first[3].insert(objects.first[3].begin(), body);//вставка в начало
-				//	_body.insert(_body.begin(), body);//вставка в начало
-				//	body->SetPosition(k, 1);
-				//	objects.second[k][1] = body->Figure();
-				//	body_move = false;
-				//	_Head->Eat();
-
-				//	for (auto a : _fruits)
-				//	{
-				//		a->Destroy();
-				//		auto it2 = std::find(objects.first[4].begin(), objects.first[4].end(), a);
-				//		objects.first[4].erase(it2);
-				//	}
-				//}
-				//else if (new_obj == (*_walls.begin())->Figure())
-				//{
-				//	speed = 0;//its necessary that compiler does not optimize and does not skip this piece of code
-				//	_Head->Destroy();
-				//	objects.first[2].erase(objects.first[2].begin());
-				//}
-				//else if (new_obj == (*_body.begin())->Figure())
-				//{
-				//	speed = 0;//its necessary that compiler does not optimize and does not skip this piece of code
-				//	_Head->Destroy();
-				//	objects.first[2].erase(objects.first[2].begin());
-				//}
-			}
-			//add ghosts collision
-		}
-	}
-	else if (key == "RIGHT")
-	{
-		int k = _Pacman->GetPosition().first;
-		int m = _Pacman->GetPosition().second;
-		if (m != WIDTH - 1)
-		{
-			obj = objects.second[k][m + 1];
+			int k = _Pacman->GetPosition().first;
+			int m = _Pacman->GetPosition().second;
+			obj = objects.second[k + 1][m];
 
 			if (obj == (*_fields.begin())->Figure())
 			{
-				k = _Pacman->GetPosition().first;
-				m = _Pacman->GetPosition().second + 1;
+				k = _Pacman->GetPosition().first + 1;
+				m = _Pacman->GetPosition().second;
 				_Pacman->SetPosition(k, m);
+				_Pacman->SetSpeed(10);;
 				objects.second[k][m] = _Pacman->Figure();
-				objects.second[k][m - 1] = (*_fields.begin())->Figure();
+				objects.second[k - 1][m] = (*_fields.begin())->Figure();
 			}
 			//чеканные монеты
 			else if (obj == (*_coins.begin())->Figure())
 			{
-				k = _Pacman->GetPosition().first;
-				m = _Pacman->GetPosition().second + 1;
+				k = _Pacman->GetPosition().first + 1;
+				m = _Pacman->GetPosition().second;
 				_Pacman->SetPosition(k, m);
+				_Pacman->SetSpeed(7);;
 				objects.second[k][m] = _Pacman->Figure();
-				objects.second[k][m - 1] = (*_fields.begin())->Figure();
+				objects.second[k - 1][m] = (*_fields.begin())->Figure();
 				_Pacman->Eat(10);
 				totalcoins++;
 
@@ -777,13 +451,14 @@ void Logic(pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>>& obje
 				}
 			}
 			//energizer
-			else if(!_booster.empty() && obj == (*_booster.begin())->Figure())
+			else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
 			{
-				k = _Pacman->GetPosition().first;
-				m = _Pacman->GetPosition().second + 1;
+				k = _Pacman->GetPosition().first + 1;
+				m = _Pacman->GetPosition().second;
 				_Pacman->SetPosition(k, m);
+				_Pacman->SetSpeed(7);;
 				objects.second[k][m] = _Pacman->Figure();
-				objects.second[k][m - 1] = (*_fields.begin())->Figure();
+				objects.second[k - 1][m] = (*_fields.begin())->Figure();
 				_Pacman->Eat(50);
 
 				for (auto a : _booster)
@@ -809,25 +484,27 @@ void Logic(pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>>& obje
 			//враги
 			else if (lambdaghost())
 			{
-				k = _Pacman->GetPosition().first;
-				m = _Pacman->GetPosition().second + 1;
+				k = _Pacman->GetPosition().first + 1;
+				m = _Pacman->GetPosition().second;
 				for (auto a : _ghosts)
 				{
 					int x = a->GetPosition().first;
 					int y = a->GetPosition().second;
+					a->SetSpeed(8);
 
 					if (k == x && m == y && a->GetStatus() == 3)
 					{
 						_Pacman->SetPosition(k, m);
+						_Pacman->SetSpeed(10);;
 						objects.second[k][m] = _Pacman->Figure();
-						objects.second[k][m - 1] = (*_fields.begin())->Figure();
+						objects.second[k - 1][m] = (*_fields.begin())->Figure();
 						_Pacman->Eat(200);
 
-						x = a->GetStartPos().first;
+						x = a->GetStartPos().first + 4;
 						y = a->GetStartPos().second;
 						a->SetPosition(x, y);
 						a->SetStatus("CHASE");
-						a->SetDoorStatus(false);
+						a->SetDoorLock(true);
 						a->SetDirection("UP");
 						objects.second[x][y] = a->Figure();
 					}
@@ -835,21 +512,21 @@ void Logic(pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>>& obje
 					{
 						DecreaseHP();
 						objects.second[k][m] = (*_fields.begin())->Figure();
-						objects.second[k][m - 1] = (*_fields.begin())->Figure();
+						objects.second[k - 1][m] = (*_fields.begin())->Figure();
 						int q = _Pacman->GetStartPosition().first;
 						int w = _Pacman->GetStartPosition().second;
 						_Pacman->SetPosition(q, w);
+						_Pacman->SetSpeed(7);;
 						objects.second[q][w] = _Pacman->Figure();
 						for (auto a : _ghosts)
 						{
 							int x = a->GetStartPos().first;
 							int y = a->GetStartPos().second;
 							a->SetPosition(x, y);
-							a->SetStatus("HOUSE");
-							a->SetDoorStatus(false);
-							a->SetDirection("UP");
+							a->SetStatus("SCATTER");
+							a->SetDoorLock(true);
+							a->SetDirection("LEFT");
 							objects.second[x][y] = a->Figure();
-							return;
 						}
 					}
 				}
@@ -862,13 +539,14 @@ void Logic(pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>>& obje
 					if (a != nullptr && obj == a->Figure())
 					{
 						Fruits* fr = dynamic_cast<Fruits*>(a);
-						k = _Pacman->GetPosition().first;
-						m = _Pacman->GetPosition().second + 1;
+						k = _Pacman->GetPosition().first + 1;
+						m = _Pacman->GetPosition().second;
 						if (std::make_pair(k, m) != a->GetPosition()) continue;
 
 						_Pacman->SetPosition(k, m);
+						_Pacman->SetSpeed(7);;
 						objects.second[k][m] = _Pacman->Figure();
-						objects.second[k][m - 1] = (*_fields.begin())->Figure();
+						objects.second[k - 1][m] = (*_fields.begin())->Figure();
 						_Pacman->Eat(fr->CalculateScore(currentlevel));
 						gc.AddFruit(fr->Figure());
 						fr->Destroy();
@@ -879,69 +557,340 @@ void Logic(pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>>& obje
 				}
 			}
 		}
-		else
+		else if (key == "LEFT")
 		{
-			m = 0;
-			obj = objects.second[k][m];
-			//проход через тоннель
-			if (obj == (*_fields.begin())->Figure())
+			int k = _Pacman->GetPosition().first;
+			int m = _Pacman->GetPosition().second;
+
+			if (m)
 			{
-				_Pacman->SetPosition(k, m);
-				objects.second[k][m] = _Pacman->Figure();
-				objects.second[k][WIDTH - 1] = (*_fields.begin())->Figure();
-				//k = _Head->GetPosition().first;
-				//m = 1;
-				//pair<char, int> new_obj = objects.second[k][m];
-				//if (new_obj == (*_fields.begin())->Figure())
-				//{
-				//	_Head->SetPosition(k, m);
-				//	objects.second[k][m] = _Head->Figure();
-				//	objects.second[k][Y - 2] = (*_fields.begin())->Figure();
-				//}
-				//else if (new_obj == (*_fruits.begin())->Figure())
-				//{
-				//	_Head->SetPosition(k, m);
-				//	objects.second[k][m] = _Head->Figure();
+				obj = objects.second[k][m - 1];
 
-				//	Body* body = new Body();
-				//	objects.first[3].insert(objects.first[3].begin(), body);//вставка в начало
-				//	_body.insert(_body.begin(), body);//вставка в начало
-				//	body->SetPosition(k, Y - 2);
-				//	objects.second[k][Y - 2] = body->Figure();
-				//	body_move = false;
-				//	_Head->Eat();
 
-				//	for (auto a : _fruits)
-				//	{
-				//		a->Destroy();
-				//		auto it2 = std::find(objects.first[4].begin(), objects.first[4].end(), a);
-				//		objects.first[4].erase(it2);
-				//	}
-				//}
-				//else if (new_obj == (*_walls.begin())->Figure())
-				//{
-				//	speed = 0;//its necessary that compiler does not optimize and does not skip this piece of code
-				//	_Head->Destroy();
-				//	objects.first[2].erase(objects.first[2].begin());
-				//}
-				//else if (new_obj == (*_body.begin())->Figure())
-				//{
-				//	speed = 0;//its necessary that compiler does not optimize and does not skip this piece of code
-				//	_Head->Destroy();
-				//	objects.first[2].erase(objects.first[2].begin());
-				//}
+				//проход по полям
+				if (obj == (*_fields.begin())->Figure())
+				{
+					k = _Pacman->GetPosition().first;
+					m = _Pacman->GetPosition().second - 1;
+					_Pacman->SetPosition(k, m);
+					_Pacman->SetSpeed(10);;
+					objects.second[k][m] = _Pacman->Figure();
+					objects.second[k][m + 1] = (*_fields.begin())->Figure();
+				}
+				//чеканные монеты
+				else if (obj == (*_coins.begin())->Figure())
+				{
+					k = _Pacman->GetPosition().first;
+					m = _Pacman->GetPosition().second - 1;
+					_Pacman->SetPosition(k, m);
+					_Pacman->SetSpeed(7);;
+					objects.second[k][m] = _Pacman->Figure();
+					objects.second[k][m + 1] = (*_fields.begin())->Figure();
+					_Pacman->Eat(10);
+					totalcoins++;
+
+					for (auto a : _coins)
+					{
+						if (a->GetPosition() == _Pacman->GetPosition())
+						{
+							auto it = std::find(objects.first[1].begin(), objects.first[1].end(), a);
+							(*it)->Destroy();
+							objects.first[1].erase(it);
+						}
+					}
+				}
+				//energizer
+				else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
+				{
+					k = _Pacman->GetPosition().first;
+					m = _Pacman->GetPosition().second - 1;
+					_Pacman->SetPosition(k, m);
+					_Pacman->SetSpeed(7);;
+					objects.second[k][m] = _Pacman->Figure();
+					objects.second[k][m + 1] = (*_fields.begin())->Figure();
+					_Pacman->Eat(50);
+
+					for (auto a : _booster)
+					{
+						if (a->GetPosition() == _Pacman->GetPosition())
+						{
+							auto it = std::find(objects.first[4].begin(), objects.first[4].end(), a);
+							(*it)->Destroy();
+							objects.first[4].erase(it);
+						}
+					}
+					for (auto a : _ghosts)
+					{
+						a->SetStatus("FRIGHTENED");
+						objects.second[a->GetPosition().first][a->GetPosition().second] = a->Figure();
+					}
+				}
+				//стены
+				else if (obj == (*_borders.begin())->Figure())
+				{
+					objects.second[k][m] = _Pacman->Figure();
+				}
+				//враги
+				else if (lambdaghost())
+				{
+					k = _Pacman->GetPosition().first;
+					m = _Pacman->GetPosition().second - 1;
+					for (auto a : _ghosts)
+					{
+						int x = a->GetPosition().first;
+						int y = a->GetPosition().second;
+						a->SetSpeed(8);
+
+						if (k == x && m == y && a->GetStatus() == 3)
+						{
+							_Pacman->SetPosition(k, m);
+							_Pacman->SetSpeed(10);;
+							objects.second[k][m] = _Pacman->Figure();
+							objects.second[k][m + 1] = (*_fields.begin())->Figure();
+							_Pacman->Eat(200);
+
+							x = a->GetStartPos().first + 4;
+							y = a->GetStartPos().second;
+							a->SetPosition(x, y);
+							a->SetStatus("CHASE");
+							a->SetDoorLock(true);
+							a->SetDirection("UP");
+							objects.second[x][y] = a->Figure();
+						}
+						else if (k == x && m == y && a->GetStatus() != 3)
+						{
+							DecreaseHP();
+							objects.second[k][m] = (*_fields.begin())->Figure();
+							objects.second[k][m + 1] = (*_fields.begin())->Figure();
+							int q = _Pacman->GetStartPosition().first;
+							int w = _Pacman->GetStartPosition().second;
+							_Pacman->SetPosition(q, w);
+							_Pacman->SetSpeed(7);;
+							objects.second[q][w] = _Pacman->Figure();
+							for (auto a : _ghosts)
+							{
+								int x = a->GetStartPos().first;
+								int y = a->GetStartPos().second;
+								a->SetPosition(x, y);
+								a->SetStatus("SCATTER");
+								a->SetDoorLock(true);
+								a->SetDirection("LEFT");
+								objects.second[x][y] = a->Figure();
+							}
+						}
+					}
+				}
+				//фрукты
+				else if (lambdafruit())
+				{
+					for (auto a : objects.first[6])
+					{
+						if (a != nullptr && obj == a->Figure())
+						{
+							Fruits* fr = dynamic_cast<Fruits*>(a);
+							k = _Pacman->GetPosition().first;
+							m = _Pacman->GetPosition().second - 1;
+							if (std::make_pair(k, m) != a->GetPosition()) continue;
+
+							_Pacman->SetPosition(k, m);
+							_Pacman->SetSpeed(7);;
+							objects.second[k][m] = _Pacman->Figure();
+							objects.second[k][m + 1] = (*_fields.begin())->Figure();
+							_Pacman->Eat(fr->CalculateScore(currentlevel));
+							gc.AddFruit(fr->Figure());
+							fr->Destroy();
+							auto it = std::find(objects.first[6].begin(), objects.first[6].end(), a);
+							*it = nullptr;
+							break;
+						}
+					}
+				}
 			}
-			//add ghosts collision
+			else
+			{
+				m = WIDTH - 1;
+				obj = objects.second[k][m];
+				//проход через тоннель
+				if (obj == (*_fields.begin())->Figure())
+				{
+					_Pacman->SetPosition(k, m);
+					_Pacman->SetSpeed(10);;
+					objects.second[k][m] = _Pacman->Figure();
+					objects.second[k][0] = (*_fields.begin())->Figure();
+				}
+				//add ghosts collision
+			}
+		}
+		else if (key == "RIGHT")
+		{
+			int k = _Pacman->GetPosition().first;
+			int m = _Pacman->GetPosition().second;
+			if (m != WIDTH - 1)
+			{
+				obj = objects.second[k][m + 1];
+
+				if (obj == (*_fields.begin())->Figure())
+				{
+					k = _Pacman->GetPosition().first;
+					m = _Pacman->GetPosition().second + 1;
+					_Pacman->SetPosition(k, m);
+					_Pacman->SetSpeed(10);;
+					objects.second[k][m] = _Pacman->Figure();
+					objects.second[k][m - 1] = (*_fields.begin())->Figure();
+				}
+				//чеканные монеты
+				else if (obj == (*_coins.begin())->Figure())
+				{
+					k = _Pacman->GetPosition().first;
+					m = _Pacman->GetPosition().second + 1;
+					_Pacman->SetPosition(k, m);
+					_Pacman->SetSpeed(7);;
+					objects.second[k][m] = _Pacman->Figure();
+					objects.second[k][m - 1] = (*_fields.begin())->Figure();
+					_Pacman->Eat(10);
+					totalcoins++;
+
+					for (auto a : _coins)
+					{
+						if (a->GetPosition() == _Pacman->GetPosition())
+						{
+							auto it = std::find(objects.first[1].begin(), objects.first[1].end(), a);
+							(*it)->Destroy();
+							objects.first[1].erase(it);
+						}
+					}
+				}
+				//energizer
+				else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
+				{
+					k = _Pacman->GetPosition().first;
+					m = _Pacman->GetPosition().second + 1;
+					_Pacman->SetPosition(k, m);
+					_Pacman->SetSpeed(7);;
+					objects.second[k][m] = _Pacman->Figure();
+					objects.second[k][m - 1] = (*_fields.begin())->Figure();
+					_Pacman->Eat(50);
+
+					for (auto a : _booster)
+					{
+						if (a->GetPosition() == _Pacman->GetPosition())
+						{
+							auto it = std::find(objects.first[4].begin(), objects.first[4].end(), a);
+							(*it)->Destroy();
+							objects.first[4].erase(it);
+						}
+					}
+					for (auto a : _ghosts)
+					{
+						a->SetStatus("FRIGHTENED");
+						objects.second[a->GetPosition().first][a->GetPosition().second] = a->Figure();
+					}
+				}
+				//стены
+				else if (obj == (*_borders.begin())->Figure())
+				{
+					objects.second[k][m] = _Pacman->Figure();
+				}
+				//враги
+				else if (lambdaghost())
+				{
+					k = _Pacman->GetPosition().first;
+					m = _Pacman->GetPosition().second + 1;
+					for (auto a : _ghosts)
+					{
+						int x = a->GetPosition().first;
+						int y = a->GetPosition().second;
+						a->SetSpeed(8);
+
+						if (k == x && m == y && a->GetStatus() == 3)
+						{
+							_Pacman->SetPosition(k, m);
+							_Pacman->SetSpeed(7);;
+							objects.second[k][m] = _Pacman->Figure();
+							objects.second[k][m - 1] = (*_fields.begin())->Figure();
+							_Pacman->Eat(200);
+
+							x = a->GetStartPos().first + 4;
+							y = a->GetStartPos().second;
+							a->SetPosition(x, y);
+							a->SetStatus("CHASE");
+							a->SetDoorLock(true);
+							a->SetDirection("UP");
+							objects.second[x][y] = a->Figure();
+						}
+						else if (k == x && m == y && a->GetStatus() != 3)
+						{
+							DecreaseHP();
+							objects.second[k][m] = (*_fields.begin())->Figure();
+							objects.second[k][m - 1] = (*_fields.begin())->Figure();
+							int q = _Pacman->GetStartPosition().first;
+							int w = _Pacman->GetStartPosition().second;
+							_Pacman->SetPosition(q, w);
+							_Pacman->SetSpeed(7);;
+							objects.second[q][w] = _Pacman->Figure();
+							for (auto a : _ghosts)
+							{
+								int x = a->GetStartPos().first;
+								int y = a->GetStartPos().second;
+								a->SetPosition(x, y);
+								a->SetStatus("SCATTER");
+								a->SetDoorLock(true);
+								a->SetDirection("LEFT");
+								objects.second[x][y] = a->Figure();
+							}
+						}
+					}
+				}
+				//фрукты
+				else if (lambdafruit())
+				{
+					for (auto a : objects.first[6])
+					{
+						if (a != nullptr && obj == a->Figure())
+						{
+							Fruits* fr = dynamic_cast<Fruits*>(a);
+							k = _Pacman->GetPosition().first;
+							m = _Pacman->GetPosition().second + 1;
+							if (std::make_pair(k, m) != a->GetPosition()) continue;
+
+							_Pacman->SetPosition(k, m);
+							_Pacman->SetSpeed(7);;
+							objects.second[k][m] = _Pacman->Figure();
+							objects.second[k][m - 1] = (*_fields.begin())->Figure();
+							_Pacman->Eat(fr->CalculateScore(currentlevel));
+							gc.AddFruit(fr->Figure());
+							fr->Destroy();
+							auto it = std::find(objects.first[6].begin(), objects.first[6].end(), a);
+							*it = nullptr;
+							break;
+						}
+					}
+				}
+			}
+			else
+			{
+				m = 0;
+				obj = objects.second[k][m];
+				//проход через тоннель
+				if (obj == (*_fields.begin())->Figure())
+				{
+					_Pacman->SetPosition(k, m);
+					_Pacman->SetSpeed(10);;
+					objects.second[k][m] = _Pacman->Figure();
+					objects.second[k][WIDTH - 1] = (*_fields.begin())->Figure();
+				}
+				//add ghosts collision
+			}
 		}
 	}
 
-	if (totalcoins == 7 && objects.first[6][0] == nullptr)
+	if (totalcoins == 70 && objects.first[6][0] == nullptr)
 	{
 		objects.first[6][0] = new Fruits();
 		objects.first[6][0]->SetPosition(17, 13);
 		objects.second[objects.first[6][0]->GetPosition().first][objects.first[6][0]->GetPosition().second] = objects.first[6][0]->Figure();
 	}
-	if (totalcoins == 17 && objects.first[6][1] == nullptr)
+	if (totalcoins == 170 && objects.first[6][1] == nullptr)
 	{
 		objects.first[6][1] = new Fruits();
 		objects.first[6][1]->SetPosition(17, 14);
@@ -950,19 +899,67 @@ void Logic(pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>>& obje
 
 	for (auto a : _ghosts)
 	{
-		pair<int, int> p1 = a->GetPosition();
-		a->Go(*_Pacman);
-		if (a->CheckPacman(*_Pacman))
+		a->UpdateDeltaTime();
+		if (a->Update())
 		{
-			int q = _Pacman->GetStartPosition().first;
-			int w = _Pacman->GetStartPosition().second;
-			_Pacman->SetPosition(q, w);
-			objects.second[q][w] = _Pacman->Figure();
-		}
-		objects.second[p1.first][p1.second] = (*_fields.begin())->Figure();
-		pair<int, int> p2 = a->GetPosition();
-		objects.second[p2.first][p2.second] = a->Figure();
+			pair<int, int> p1 = a->GetPosition();//old position		
+			//if (a->GetStatus() == 0 && !a->GetDoorLock() && p1.first == 12 && p1.second == 14)
+			//{
+			//	a->SetStatus("SCATTER");
+			//	a->SetDoorLock(true);
+			//}
+			pair<int, int> p2 = a->Go(*_Pacman);//future position
+			objects.second[p1.first][p1.second] = a->GetLowField();
+			a->SetPosition(p2.first, p2.second);
 
+			a->GetStatus() == 3 ? a->SetSpeed(5) : a->SetSpeed(8);
+
+			if (a->CheckPacman(*_Pacman))
+			{
+				if (a->GetStatus() == 3)
+				{
+					int x = a->GetStartPos().first + 4;
+					int y = a->GetStartPos().second;
+
+					objects.second[p2.first][p2.second] = _Pacman->Figure();
+					a->SetLowField(objects.second[x][y]);
+					_Pacman->Eat(200);
+
+					a->SetPosition(x, y);//fix start position
+					a->SetStatus("CHASE");
+					a->SetDoorLock(true);
+					a->SetDirection("UP");
+					objects.second[x][y] = a->Figure();
+				}
+				else
+				{
+					DecreaseHP();
+					objects.second[p2.first][p2.second] = (*_fields.begin())->Figure();
+
+					int q = _Pacman->GetStartPosition().first;
+					int w = _Pacman->GetStartPosition().second;
+					_Pacman->SetPosition(q, w);
+					objects.second[q][w] = _Pacman->Figure();
+					for (auto b : _ghosts)
+					{
+						int x = b->GetStartPos().first;
+						int y = b->GetStartPos().second;
+						b->SetLowField(objects.second[x][y]);
+						b->SetPosition(x, y);
+						b->SetStatus("SCATTER");
+						b->SetDoorLock(true);
+						b->SetDirection("LEFT");
+						objects.second[x][y] = a->Figure();
+					}
+					break;
+				}
+			}
+			else
+			{
+				a->SetLowField(objects.second[p2.first][p2.second]);
+				objects.second[p2.first][p2.second] = a->Figure();
+			}
+		}
 	}
 
 
@@ -975,7 +972,7 @@ void DecreaseHP()
 {
 	string s = Pacman::GetHealth();
 	int hp = 0;
-	for (int i = 0; i < s.size(); i++)
+	for (int i = 0; i < static_cast<int>(s.size()); i++)
 	{
 		if (s[i] == char(3))
 		{
@@ -1038,9 +1035,9 @@ void Draw(vector<vector<pair<char, int>>> objects)
 
 void GlobalCleaning(pair<vector<vector<Objects*>>, vector<vector<pair<char, int>>>>& objects)
 {
-	for (int i = 0; i < objects.first.size(); i++)
+	for (int i = 0; i < static_cast<int>(objects.first.size()); i++)
 	{
-		for (int j = 0; j < objects.first[i].size(); j++)
+		for (int j = 0; j < static_cast<int>(objects.first[i].size()); j++)
 		{
 			if (i != 3 && i != 6)
 			{

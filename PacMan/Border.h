@@ -1,7 +1,7 @@
 #pragma once
-#include "Objects.h"
+#include "MotionlessObjects.h"
 class Border :
-	public Objects
+	public MotionlessObjects
 {
 public:
 	Border();

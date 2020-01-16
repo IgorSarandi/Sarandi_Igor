@@ -2,7 +2,6 @@
 
 int Pacman::score_ = 0;
 int Pacman::health_ = 0;
-int Pacman::speed_ = 0;
 bool Pacman::checklvl_ = false;
 bool Pacman::energy_ = false;
 std::pair<int, int> Pacman::startposition_ = std::make_pair(23, 14);
@@ -63,15 +62,6 @@ void Pacman::SetHealth(const int hp)
 	health_ = hp;
 }
 
-int Pacman::GetSpeed()
-{
-	return speed_;
-}
-
-void Pacman::SetSpeed(const int speed)
-{
-	speed_ = speed;
-}
 
 bool Pacman::GetCheckLevel()
 {

@@ -1,12 +1,12 @@
 #pragma once
-#include "Objects.h"
+#include "MovingObjects.h"
 #include "Pacman.h"
 #include <string>
 #include <map>
 #include<vector>
 
 class Ghosts ://abstract class
-	public Objects
+	public MovingObjects
 {
 public:
 	Ghosts();
@@ -22,9 +22,9 @@ public:
 
 	void SetStatus(std::string);
 
-	bool GetDoorStatus() const;
+	bool GetDoorLock() const;
 
-	void SetDoorStatus(bool);
+	void SetDoorLock(bool);
 
 	std::pair<int, int> GetTargetField() const;
 
@@ -32,13 +32,17 @@ public:
 
 	std::pair <int, int> GetStartPos() const;
 
-	void SetStartPos(int _x, int _y);
+	void SetStartPos(int, int);
+
+	std::pair <char, int> GetLowField() const;
+
+	void SetLowField(std::pair <char, int>);
 
 	std::pair<int, int> FindTargetLee(std::pair<int, int>);
 
 	std::pair<int, int> FindTargetDirect(std::pair<int, int>);
 
-	void Go(const Pacman&);
+	std::pair<int, int> Go(const Pacman&);
 
 protected:
 	std::map<std::string, int> directions;
@@ -50,6 +54,7 @@ private:
 	std::vector<std::vector<int>> land_;
 	std::pair<int, int> targetfield_;
 	std::pair<int, int> startpos_;
+	std::pair<char, int> lowfield_;
 	bool door_;
 };
 

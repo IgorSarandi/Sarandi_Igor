@@ -1,7 +1,7 @@
 #pragma once
-#include "Objects.h"
+#include "MotionlessObjects.h"
 class Booster:
-	public Objects
+	public MotionlessObjects
 {
 public:
 	Booster();

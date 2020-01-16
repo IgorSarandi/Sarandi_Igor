@@ -5,7 +5,7 @@
 
 
 
-Ghosts::Ghosts() : land_(CreateMap()), door_(false)
+Ghosts::Ghosts() : land_(CreateMap()), door_(true), lowfield_(' ', 1)
 {
 	directions = { {"UP", 0}, {"DOWN", 1}, {"LEFT", 2}, {"RIGHT", 3} };
 	current_direction_ = "UP";
@@ -24,6 +24,7 @@ bool Ghosts::CheckPacman(const Pacman& pac) const
 	return pac.GetPosition() == this->GetPosition() ? true : false;
 }
 
+
 int Ghosts::GetDirection() const
 {
 	return directions.at(current_direction_);
@@ -33,6 +34,7 @@ void Ghosts::SetDirection(std::string current_direction)
 {
 	current_direction_ = current_direction;
 }
+
 
 int Ghosts::GetStatus() const
 {
@@ -54,15 +56,15 @@ void Ghosts::SetStatus(std::string current_status)
 		{
 			temp.push_back(0);
 		}
-		else if (land_[x + 1][y] != 0 && dir != 1)
+		if (land_[x + 1][y] != 0 && dir != 1)
 		{
 			temp.push_back(1);
 		}
-		else if (land_[x][y - 1] != 0 && dir != 2)
+		if (land_[x][y - 1] != 0 && dir != 2)
 		{
 			temp.push_back(2);
 		}
-		else if (land_[x][y + 1] != 0 && dir != 3)
+		if (land_[x][y + 1] != 0 && dir != 3)
 		{
 			temp.push_back(3);
 		}
@@ -82,15 +84,17 @@ void Ghosts::SetStatus(std::string current_status)
 	}
 }
 
-bool Ghosts::GetDoorStatus() const
+
+bool Ghosts::GetDoorLock() const
 {
 	return door_;
 }
 
-void Ghosts::SetDoorStatus(bool door)
+void Ghosts::SetDoorLock(bool door)
 {
 	door_ = door;
 }
+
 
 std::pair<int, int> Ghosts::GetTargetField() const
 {
@@ -101,6 +105,7 @@ void Ghosts::SetTargetField(std::pair<int, int> targetfield)
 {
 	targetfield_ = targetfield;
 }
+
 
 std::pair<int, int> Ghosts::GetStartPos() const
 {
@@ -113,15 +118,27 @@ void Ghosts::SetStartPos(int x, int y)
 	startpos_.second = y;
 }
 
+
+std::pair<char, int> Ghosts::GetLowField() const
+{
+	return lowfield_;
+}
+
+void Ghosts::SetLowField(std::pair<char, int> lowfield)
+{
+	lowfield_ = lowfield;
+}
+
+
 std::pair<int, int> Ghosts::FindTargetLee(std::pair<int, int> target)//add restrictions binded with directions
 {
 	//Lee algorithm(Wave algorithm)
 
 	std::vector<std::vector<int>> map(CreateMap());
 	std::map<std::pair<int, int>, int> field;
-	for (int i = 0; i < map.size(); i++)
+	for (int i = 0; i < static_cast<int>(map.size()); i++)
 	{
-		for (int j = 0; j < map.size(); j++)
+		for (int j = 0; j < static_cast<int>(map.size()); j++)
 		{
 			std::pair<int, int> p = std::make_pair(i, j);
 			field[p] = INT_MAX;
@@ -136,13 +153,13 @@ std::pair<int, int> Ghosts::FindTargetLee(std::pair<int, int> target)//add restr
 	field[std::make_pair(k, m)] = 0;            // стартова€ €чейка помечена 0
 	while(field[target] == INT_MAX)
 	{
-		for (int i = 0; i < map.size(); i++)
+		for (int i = 0; i < static_cast<int>(map.size()); i++)
 		{
-			for (int j = 0; j < map[i].size(); j++)
+			for (int j = 0; j < static_cast<int>(map[i].size()); j++)
 			{
 				if (field[std::make_pair(i, j)] == d)                         // €чейка (x, y) помечена числом d
 				{
-					if (i + 1 < map.size() && map[i + 1][j] != 0 && field[std::make_pair(i + 1, j)] == INT_MAX)
+					if (i + 1 < static_cast<int>(map.size()) && map[i + 1][j] != 0 && field[std::make_pair(i + 1, j)] == INT_MAX)
 					{
 						field[std::make_pair(i + 1, j)] = d + 1;
 					}
@@ -150,7 +167,7 @@ std::pair<int, int> Ghosts::FindTargetLee(std::pair<int, int> target)//add restr
 					{
 						field[std::make_pair(i - 1, j)] = d + 1;
 					}
-					else if (j + 1 < map[i].size() && map[i][j + 1] != 0 && field[std::make_pair(i, j + 1)] == INT_MAX)
+					else if (j + 1 < static_cast<int>(map[i].size()) && map[i][j + 1] != 0 && field[std::make_pair(i, j + 1)] == INT_MAX)
 					{
 						field[std::make_pair(i, j + 1)] = d + 1;
 					}
@@ -170,7 +187,7 @@ std::pair<int, int> Ghosts::FindTargetLee(std::pair<int, int> target)//add restr
 	int y = target.second;
 	while (len > 1)
 	{
-		if (x + 1 < map.size() && map[x + 1][y] != 0 && field[std::make_pair(x + 1, y)] == len - 1)
+		if (x + 1 < static_cast<int>(map.size()) && map[x + 1][y] != 0 && field[std::make_pair(x + 1, y)] == len - 1)
 		{
 			x++;
 			len--;
@@ -182,7 +199,7 @@ std::pair<int, int> Ghosts::FindTargetLee(std::pair<int, int> target)//add restr
 			len--;
 			continue;
 		}
-		else if (y + 1 < map[x].size() && map[x][y + 1] != 0 && field[std::make_pair(x, y + 1)] == len - 1)
+		else if (y + 1 < static_cast<int>(map[x].size()) && map[x][y + 1] != 0 && field[std::make_pair(x, y + 1)] == len - 1)
 		{
 			y++;
 			len--;
@@ -219,9 +236,8 @@ std::pair<int, int> Ghosts::FindTargetDirect(std::pair<int, int> target)
 	int dx[4] = {-1, 1, 0, 0 };
 	int dy[4] = { 0, 0, -1, 1 };//up, down, left, right
 
-	auto lambdadir = [&dir, &i](int n = 0)
+	auto lambdadir = [&dir](int n)
 	{
-		n = i;
 		if (dir == 0 && n == 1)
 			return false;
 		else if (dir == 1 && n == 0)
@@ -245,7 +261,7 @@ std::pair<int, int> Ghosts::FindTargetDirect(std::pair<int, int> target)
 				dirs.push_back(i);
 			}
 		}
-		else if (land_[t1][t2] != 0 && lambdadir())
+		else if (land_[t1][t2] != 0 && lambdadir(i))
 		{
 			pow1 = pow(x - t1, 2);
 			pow2 = pow(y - t2, 2);
@@ -261,8 +277,12 @@ std::pair<int, int> Ghosts::FindTargetDirect(std::pair<int, int> target)
 		}
 		else if (land_[x][y] == 0 && x == 12 && y == 14)//выход из дома в дверь
 		{
-			this->SetDirection("UP");
-			return std::make_pair(x, y);
+			if (k == x + 1 && m == y)
+			{
+				this->SetDirection("UP");
+				this->SetDoorLock(false);
+				return std::make_pair(x, y);
+			}
 		}
 	}
 	
@@ -279,11 +299,48 @@ std::pair<int, int> Ghosts::FindTargetDirect(std::pair<int, int> target)
 				if (a.second == dirs[q])
 				{
 					this->SetDirection(a.first);
-					int t1 = k + dx[q];
-					int t2 = m + dy[q];
-					return std::make_pair(t1, t2);;
+					int t1 = k + dx[dirs[q]];
+					int t2 = m + dy[dirs[q]];
+					return std::make_pair(t1, t2);
 				}
 			}
+		}
+		else if (dirs.size() == 2)
+		{
+			for (int i = 0; i < static_cast<int>(dirs.size()); i++)
+			{
+				if (lambdadir(dirs[i]))
+				{
+					for (auto a : directions)
+					{
+						if (a.second == dirs[i])
+						{
+							this->SetDirection(a.first);
+							int t1 = k + dx[dirs[i]];
+							int t2 = m + dy[dirs[i]];
+							return std::make_pair(t1, t2);
+						}
+					}
+				}
+			}
+			return std::make_pair(INT_MAX, INT_MAX);//return error
+		}
+		else
+		{
+			int t1 = k + dx[dirs[0]];
+			int t2 = m + dy[dirs[0]];
+			if (dirs[0] != dir)
+			{
+				for (auto a : directions)
+				{
+					if (a.second == dirs[0])
+					{
+						this->SetDirection(a.first);
+						break;
+					}
+				}
+			}
+			return std::make_pair(t1, t2);
 		}
 	}
 	else
@@ -299,7 +356,7 @@ std::pair<int, int> Ghosts::FindTargetDirect(std::pair<int, int> target)
 	}
 }
 
-void Ghosts::Go(const Pacman& pac)//check pacman//return obj(coin, booster, field,fr)
+std::pair<int, int> Ghosts::Go(const Pacman& pac)//check pacman//return obj(coin, booster, field,fr)
 {
 	int st = this->GetStatus();
 	int dir = this->GetDirection();
@@ -308,39 +365,70 @@ void Ghosts::Go(const Pacman& pac)//check pacman//return obj(coin, booster, fiel
 
 	if (st == 0)
 	{
-		if (!this->GetDoorStatus())
+		if (this->GetDoorLock())
 		{
-			if (land_[x - 1][y] == 0)
+			if (dir == 0)
 			{
-				this->SetDirection("DOWN");
-				this->SetPosition(x + 1, y);
+				if (land_[x - 1][y] == 0)
+				{
+					this->SetDirection("DOWN");
+					return std::make_pair(x + 1, y);
+				}
+				else
+				{
+					return std::make_pair(x - 1, y);
+				}
+			}
+			else if (dir == 1)
+			{
+				if (land_[x + 1][y] == 0)
+				{
+					this->SetDirection("UP");
+					return std::make_pair(x - 1, y);
+				}
+				else
+				{
+					return std::make_pair(x + 1, y);
+				}
 			}
 			else
 			{
-				this->SetDirection("UP");
-				this->SetPosition(x - 1, y);
+				if (land_[x - 1][y] == 0)
+				{
+					this->SetDirection("DOWN");
+					return std::make_pair(x + 1, y);
+				}
+				else
+				{
+					this->SetDirection("UP");
+					return std::make_pair(x - 1, y);
+				}
 			}
 		}
 		else
 		{
-			std::pair<int, int> p = this->FindTargetDirect(std::make_pair(12, 14));
-			this->SetPosition(p.first, p.second);
+			return this->FindTargetDirect(std::make_pair(12, 14));//fix
 		}
 	}
 	else if (st == 1)
 	{
-		std::pair<int, int> p = this->FindTargetDirect(pac.GetPosition());
-		this->SetPosition(p.first, p.second);
+		if (this->GetDoorLock())
+		{
+			return this->FindTargetDirect(std::make_pair(12, 14));
+		}
+		else
+		{
+			return this->FindTargetDirect(pac.GetPosition());
+		}
 	}
 	else if (st == 2)
 	{
-		std::pair<int, int> p = this->FindTargetDirect(this->GetTargetField());
-		this->SetPosition(p.first, p.second);
+		return this->FindTargetDirect(this->GetTargetField());
 	}
 	else if (st == 3)
 	{
-		std::pair<int, int> p = this->FindTargetDirect(std::make_pair(-1, -1));
-		this->SetPosition(p.first, p.second);
+		return this->FindTargetDirect(std::make_pair(-1, -1));
 	}
+	else return std::make_pair(INT_MAX, INT_MAX);//return error
 }
 
