@@ -1,9 +1,10 @@
 #pragma once
 #include "MovingObjects.h"
-#include "Pacman.h"
+#include "MotionlessObjects.h"
+
 #include <string>
 #include <map>
-#include<vector>
+#include <vector>
 
 class Ghosts ://abstract class
 	public MovingObjects
@@ -12,49 +13,39 @@ public:
 	Ghosts();
 	virtual ~Ghosts() = 0;
 
-	bool CheckPacman(const Pacman&) const;
+	bool CheckPacman(std::pair<int, int>);
 
-	int GetDirection() const;
+	int getStatus() const;
 
-	void SetDirection(std::string);
-	
-	int GetStatus() const;
+	void setStatus(std::string);
 
-	void SetStatus(std::string);
+	bool getDoorPassed() const;
 
-	bool GetDoorLock() const;
+	void setDoorPassed(bool);
 
-	void SetDoorLock(bool);
+	std::pair<int, int> getTargetField() const;
 
-	std::pair<int, int> GetTargetField() const;
+	void setTargetField(std::pair<int, int>);
 
-	void SetTargetField(std::pair<int, int>);
+	std::pair <char, int> getLowField() const;
 
-	std::pair <int, int> GetStartPos() const;
-
-	void SetStartPos(int, int);
-
-	std::pair <char, int> GetLowField() const;
-
-	void SetLowField(std::pair <char, int>);
-
-	std::pair<int, int> FindTargetLee(std::pair<int, int>);
+	void setLowField(std::pair<char, int>);
 
 	std::pair<int, int> FindTargetDirect(std::pair<int, int>);
 
-	std::pair<int, int> Go(const Pacman&);
+	std::pair<int, int> Go(std::pair<int, int>);
+
+	virtual void Character() = 0;
 
 protected:
-	std::map<std::string, int> directions;
-	std::map<std::string, int> status;
+	const std::map<std::string, int> status;
+	const std::pair<int, int> doorCoord_;
 
 private:
-	std::string current_direction_;
 	std::string current_status_;
-	std::vector<std::vector<int>> land_;
 	std::pair<int, int> targetfield_;
 	std::pair<int, int> startpos_;
 	std::pair<char, int> lowfield_;
-	bool door_;
+	bool doorPassed_;
 };
 

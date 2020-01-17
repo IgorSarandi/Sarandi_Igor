@@ -15,12 +15,12 @@ void Objects::Destroy()
 	this->~Objects();
 }
 
-std::pair <int, int> Objects::GetPosition() const
+std::pair <int, int> Objects::getPosition() const
 {
 	return position_;
 }
 
-void Objects::SetPosition(int x, int y)
+void Objects::setPosition(int x, int y)
 {
 	position_.first = x;
 	position_.second = y;

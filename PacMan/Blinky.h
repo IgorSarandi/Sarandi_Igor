@@ -8,5 +8,7 @@ public:
 	~Blinky();
 
 	std::pair<char, int> Figure() override;
+
+	void Character() override;
 };
 

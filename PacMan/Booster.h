@@ -1,6 +1,6 @@
 #pragma once
 #include "MotionlessObjects.h"
-class Booster:
+class Booster :
 	public MotionlessObjects
 {
 public:
@@ -8,5 +8,6 @@ public:
 	~Booster();
 
 	std::pair<char, int> Figure() override;
+
 };
 

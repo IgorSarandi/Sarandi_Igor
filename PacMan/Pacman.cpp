@@ -1,29 +1,15 @@
 #include "Pacman.h"
+#include "CreateMap.h"
 
-int Pacman::score_ = 0;
-int Pacman::health_ = 0;
-bool Pacman::checklvl_ = false;
-bool Pacman::energy_ = false;
-std::pair<int, int> Pacman::startposition_ = std::make_pair(23, 14);
+
+
+Pacman::Pacman()
+{
+}
+
 
 Pacman::~Pacman()
 {
-}
-
-
-Pacman& Pacman::getSingleton()
-{
-	static Pacman singleton;
-	singleton.SetStartPosition(23, 14);
-	singleton.SetPosition(23, 14);
-	singleton.SetHealth(3);
-	singleton.SetEnergy(false);
-	return singleton;
-}
-
-void Pacman::Eat(const int mass)
-{
-	score_ += mass;
 }
 
 std::pair<char, int> Pacman::Figure()
@@ -31,64 +17,27 @@ std::pair<char, int> Pacman::Figure()
 	return std::make_pair('O', 78);
 }
 
-int Pacman::GetScore()
+bool Pacman::CheckDirection()
 {
-	return score_;
-}
+	int x = this->getPosition().first;
+	int y = this->getPosition().second;
+	int dir = this->getDirection();
 
-std::string Pacman::GetHealth()
-{
-	char ch = char(3);
-	std::string s;
-	if (health_ > 0)
+	if (&land_[x - 1][y] != 0 && dir != 0)
 	{
-		for (int i = 0; i < health_; i++)
-		{
-			s.push_back(ch);
-			s.push_back(' ');
-		}
-		int t = 3 - health_;
-		if (t > 0)
-		{
-			s.push_back(' ');
-			s.push_back(' ');
-		}
+		return true;
 	}
-	return s;
-}
-
-void Pacman::SetHealth(const int hp)
-{
-	health_ = hp;
-}
-
-
-bool Pacman::GetCheckLevel()
-{
-	return checklvl_;
-}
-
-void Pacman::SetCheckLevel(const bool coins, const bool booster)
-{
-	checklvl_ = coins && booster ? true : false;
-}
-
-bool Pacman::GetEnergy()
-{
-	return energy_;
-}
-
-void Pacman::SetEnergy(const bool energy)
-{
-	energy_ = energy;
-}
-
-std::pair<int, int> Pacman::GetStartPosition()
-{
-	return startposition_;
-}
-
-void Pacman::SetStartPosition(int x, int y)
-{
-	startposition_ = std::make_pair(23, 14);
+	if (&land_[x + 1][y] != 0 && dir != 1)
+	{
+		return true;
+	}
+	if (&land_[x][y - 1] != 0 && dir != 2)
+	{
+		return true;
+	}
+	if (&land_[x][y + 1] != 0 && dir != 3)
+	{
+		return true;
+	}
+	return false;
 }
