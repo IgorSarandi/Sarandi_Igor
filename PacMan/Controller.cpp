@@ -1543,13 +1543,13 @@ void Controller::GhostsActions()
 
 void Controller::UpdateFruits()
 {
-	if (info_->totalcoins == 7 && _fruits[0] == nullptr)
+	if (info_->totalcoins == 70 && _fruits[0] == nullptr)
 	{
 		_fruits[0] = new Fruits();
 		_fruits[0]->setPosition(17, 13);
 		gameObjects_[_fruits[0]->getPosition().first][_fruits[0]->getPosition().second] = _fruits[0]->Figure();
 	}
-	if (info_->totalcoins == 17 && _fruits[1] == nullptr)
+	if (info_->totalcoins == 170 && _fruits[1] == nullptr)
 	{
 		_fruits[1] = new Fruits();
 		_fruits[1]->setPosition(17, 14);
