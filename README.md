@@ -11,6 +11,7 @@ Program created with used OOP and patterns.
 * A - Pacman moves left
 * S - Pacman moves down
 * D - Pacman moves right
+* Esc - Exit from game
 
 Pacman also can go through the borders of map in tunnel. 
 In this case, he will be pass to other side.
