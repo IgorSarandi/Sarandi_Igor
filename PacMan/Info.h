@@ -20,6 +20,10 @@ public:
 
 	void DecreaseHP();
 
+	bool getCheckLevel();
+
+	void setCheckLevel(const bool, const bool);
+
 	const unsigned int AMOUNT;
 
 	unsigned char currentlevel;
@@ -28,7 +32,10 @@ public:
 	unsigned int remainboosters;
 	std::string fruits;
 
+	const unsigned char MAX_LEVEL;
+
 private:
+	bool checklvl_;
 	unsigned int score_;
 	unsigned int health_;
 };

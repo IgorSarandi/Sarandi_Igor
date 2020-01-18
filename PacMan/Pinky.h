@@ -1,13 +1,11 @@
 #pragma once
 #include "Ghosts.h"
-#include "Info.h"
-
-class Blinky :
+class Pinky :
 	public Ghosts
 {
 public:
-	Blinky();
-	~Blinky();
+	Pinky();
+	~Pinky();
 
 	std::pair<char, int> Figure() override;
 

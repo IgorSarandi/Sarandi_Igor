@@ -25,6 +25,8 @@ public:
 
 	void setDirection(std::string);
 
+	std::chrono::time_point<std::chrono::steady_clock> getPresentTime() const;
+
 	void UpdateLand(std::vector<std::vector<int>>);
 
 protected:

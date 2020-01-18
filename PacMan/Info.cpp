@@ -3,9 +3,9 @@
 
 
 Info::Info(unsigned int am, unsigned char curlvl, unsigned int totc, unsigned int remc, unsigned int remb) :
-	AMOUNT(am), currentlevel(curlvl), totalcoins(totc), remaincoins(remc), remainboosters(remb)
+	AMOUNT(am), currentlevel(curlvl), totalcoins(totc), remaincoins(remc), remainboosters(remb), MAX_LEVEL(CHAR_MAX), checklvl_(false), score_(0)
 {
-	score_ = 0;
+	this->setHealth(3);
 }
 
 
@@ -46,6 +46,10 @@ std::string Info::getHealth()
 			s.push_back(' ');
 		}
 	}
+	else
+	{
+		return "";
+	}
 	return s;
 }
 
@@ -76,4 +80,14 @@ void Info::DecreaseHP()
 		}
 	}
 	this->setHealth(hp - 1);
+}
+
+bool Info::getCheckLevel()
+{
+	return checklvl_;
+}
+
+void Info::setCheckLevel(const bool coins, const bool booster)
+{
+	checklvl_ = coins && booster ? true : false;
 }

@@ -1,5 +1,7 @@
 #include "Controller.h"
-
+#include "Blinky.h"
+#include "Pinky.h"
+#include <thread>
 
 
 Controller::Controller(int sizeX, int sizeY) : BaseController(sizeX, sizeY)
@@ -12,7 +14,6 @@ Controller::Controller(int sizeX, int sizeY) : BaseController(sizeX, sizeY)
 	_borders.reserve(sqr);
 	_coins.reserve(sqr);
 	_fields.reserve(sqr);
-	_fruits.resize(2);
 }
 
 Controller::~Controller()
@@ -59,7 +60,6 @@ void Controller::Start()
 	pacman->setPosition(pacman->getStartPosition().first, pacman->getStartPosition().second);
 	pacman->setSpeed(10);
 	pacman->setDirection("UP");
-	info_->setHealth(3);
 
 	if (gameObjects_[pacman->getPosition().first][pacman->getPosition().second] == (*_coins.begin())->Figure())
 	{
@@ -114,24 +114,38 @@ void Controller::Start()
 	gameObjects_[blinky->getPosition().first][blinky->getPosition().second] = blinky->Figure();
 	_ghosts.push_back(blinky);
 
-	//Pinky* pinky = new Pinky();
-	//pinky->setSpeed(8);
-	//pinky->setDoorLock(true);
-	//pinky->setStartPos(11, 12);
-	////pinky->setStartPos(15, 14);//(13,14)
-	//pinky->setPosition(pinky->getStartPos().first, pinky->getStartPos().second);
-	//pinky->setStatus("SCATTER");
-	//pinky->setDirection("LEFT");
-	//pinky->setLowField((*_fields.begin())->Figure());
-	//pinky->setTargetField(std::make_pair(HEIGHT - 1, 0));
-	////pinky->setTargetField(std::make_pair(0, 0));
-	//table[pinky->getPosition().first][pinky->getPosition().second] = pinky->Figure();
-	//_ghosts.push_back(pinky);
+	Pinky* pinky = new Pinky();
+	pinky->setSpeed(8);
+	pinky->setDoorPassed(false);
+	pinky->setStartPosition(14, 14);
+	pinky->setPosition(pinky->getStartPosition().first, pinky->getStartPosition().second);
+	pinky->UpdateLand(crMap->globalMap());
+	pinky->setStatus("SCATTER");
+	pinky->setDirection("LEFT");
+	pinky->setLowField((*_fields.begin())->Figure());
+	pinky->setTargetField(std::make_pair(0, 0));
+	gameObjects_[pinky->getPosition().first][pinky->getPosition().second] = pinky->Figure();
+	_ghosts.push_back(pinky);
 
 
+	_fruits.resize(2);
 
 	info_->remainboosters = static_cast<int>(_booster.size());
 	info_->remaincoins = static_cast<int>(_coins.size());
+	info_->totalcoins = 0;
+}
+
+void Controller::CheckAlive()
+{
+	if (info_->getHealth().empty())
+	{
+		system("cls");
+		std::cerr << "YOU LOSE" << std::endl;
+		std::cerr << "Your SCORE is: " << info_->getScore() << std::endl;
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));//0.5 seconds
+		system("pause");
+		quick_exit(1);
+	}
 }
 
 void Controller::Logic()
@@ -139,7 +153,9 @@ void Controller::Logic()
 	this->PacmanActions();
 	this->UpdateFruits();
 	this->GhostsActions();
-
+	this->info_->setCheckLevel(_coins.empty(), _booster.empty());
+	/*if(_booster.size() < 1)
+		this->info_->setCheckLevel(true, true);*/
 }
 
 void Controller::PacmanActions()
@@ -272,6 +288,7 @@ void Controller::PacmanActions()
 
 							x = a->getStartPosition().first + 4;
 							y = a->getStartPosition().second;
+							a->setLowField((*_fields.begin())->Figure());
 							a->setPosition(x, y);
 							a->setStatus("CHASE");
 							a->setDoorPassed(false);
@@ -292,10 +309,18 @@ void Controller::PacmanActions()
 							{
 								int x = a->getStartPosition().first;
 								int y = a->getStartPosition().second;
+								int x1 = a->getPosition().first;
+								int y1 = a->getPosition().second;
+								gameObjects_[x1][y1] = a->getLowField();
 								a->setPosition(x, y);
-								a->setStatus("SCATTER");
+
+								if (a->getPrevState() == 0)
+									a->setStatus("SCATTER");
+								else
+									a->setStatus("CHASE");
+
+								a->setChaseCount(4);
 								a->setDoorPassed(false);
-								a->Character();
 								a->setDirection("LEFT");
 								gameObjects_[x][y] = a->Figure();
 							}
@@ -327,9 +352,10 @@ void Controller::PacmanActions()
 						}
 					}
 				}
+				return;
 			}
 		}
-		else if (key == "DOWN")
+		if (key == "DOWN")
 		{
 			int k = (*_pacman.begin())->getPosition().first;
 			int m = (*_pacman.begin())->getPosition().second;
@@ -423,6 +449,7 @@ void Controller::PacmanActions()
 
 							x = a->getStartPosition().first + 4;
 							y = a->getStartPosition().second;
+							a->setLowField((*_fields.begin())->Figure());
 							a->setPosition(x, y);
 							a->setStatus("CHASE");
 							a->setDoorPassed(false);
@@ -443,8 +470,17 @@ void Controller::PacmanActions()
 							{
 								int x = a->getStartPosition().first;
 								int y = a->getStartPosition().second;
+								int x1 = a->getPosition().first;
+								int y1 = a->getPosition().second;
+								gameObjects_[x1][y1] = a->getLowField();
 								a->setPosition(x, y);
-								a->setStatus("SCATTER");
+
+								if (a->getPrevState() == 0)
+									a->setStatus("SCATTER");
+								else
+									a->setStatus("CHASE");
+
+								a->setChaseCount(4);
 								a->setDoorPassed(false);
 								a->setDirection("LEFT");
 								gameObjects_[x][y] = a->Figure();
@@ -477,9 +513,10 @@ void Controller::PacmanActions()
 						}
 					}
 				}
+				return;
 			}
 		}
-		else if (key == "LEFT")
+		if (key == "LEFT")
 		{
 			int k = (*_pacman.begin())->getPosition().first;
 			int m = (*_pacman.begin())->getPosition().second;
@@ -570,13 +607,14 @@ void Controller::PacmanActions()
 							if (k == x && m == y && a->getStatus() == 2)
 							{
 								(*_pacman.begin())->setPosition(k, m);
-								(*_pacman.begin())->setSpeed(10);;
+								(*_pacman.begin())->setSpeed(10);
 								gameObjects_[k][m] = (*_pacman.begin())->Figure();
 								gameObjects_[k][m + 1] = (*_fields.begin())->Figure();
 								info_->Eat(200);
 
 								x = a->getStartPosition().first + 4;
 								y = a->getStartPosition().second;
+								a->setLowField((*_fields.begin())->Figure());
 								a->setPosition(x, y);
 								a->setStatus("CHASE");
 								a->setDoorPassed(false);
@@ -597,8 +635,17 @@ void Controller::PacmanActions()
 								{
 									int x = a->getStartPosition().first;
 									int y = a->getStartPosition().second;
+									int x1 = a->getPosition().first;
+									int y1 = a->getPosition().second;
+									gameObjects_[x1][y1] = a->getLowField();
 									a->setPosition(x, y);
-									a->setStatus("SCATTER");
+
+									if (a->getPrevState() == 0)
+										a->setStatus("SCATTER");
+									else
+										a->setStatus("CHASE");
+
+									a->setChaseCount(4);
 									a->setDoorPassed(false);
 									a->setDirection("LEFT");
 									gameObjects_[x][y] = a->Figure();
@@ -631,6 +678,7 @@ void Controller::PacmanActions()
 							}
 						}
 					}
+					return;
 				}
 			}
 			else
@@ -646,10 +694,11 @@ void Controller::PacmanActions()
 					gameObjects_[k][m] = (*_pacman.begin())->Figure();
 					gameObjects_[k][0] = (*_fields.begin())->Figure();
 				}
+				return;
 				//add ghosts collision
 			}
 		}
-		else if (key == "RIGHT")
+		if (key == "RIGHT")
 		{
 			int k = (*_pacman.begin())->getPosition().first;
 			int m = (*_pacman.begin())->getPosition().second;
@@ -739,13 +788,14 @@ void Controller::PacmanActions()
 							if (k == x && m == y && a->getStatus() == 2)
 							{
 								(*_pacman.begin())->setPosition(k, m);
-								(*_pacman.begin())->setSpeed(7);;
+								(*_pacman.begin())->setSpeed(7);
 								gameObjects_[k][m] = (*_pacman.begin())->Figure();
 								gameObjects_[k][m - 1] = (*_fields.begin())->Figure();
 								info_->Eat(200);
 
 								x = a->getStartPosition().first + 4;
 								y = a->getStartPosition().second;
+								a->setLowField((*_fields.begin())->Figure());
 								a->setPosition(x, y);
 								a->setStatus("CHASE");
 								a->setDoorPassed(false);
@@ -766,8 +816,17 @@ void Controller::PacmanActions()
 								{
 									int x = a->getStartPosition().first;
 									int y = a->getStartPosition().second;
+									int x1 = a->getPosition().first;
+									int y1 = a->getPosition().second;
+									gameObjects_[x1][y1] = a->getLowField();
 									a->setPosition(x, y);
-									a->setStatus("SCATTER");
+
+									if (a->getPrevState() == 0)
+										a->setStatus("SCATTER");
+									else
+										a->setStatus("CHASE");
+
+									a->setChaseCount(4);
 									a->setDoorPassed(false);
 									a->setDirection("LEFT");
 									gameObjects_[x][y] = a->Figure();
@@ -800,6 +859,7 @@ void Controller::PacmanActions()
 							}
 						}
 					}
+					return;
 				}
 			}
 			else
@@ -815,14 +875,15 @@ void Controller::PacmanActions()
 					gameObjects_[k][m] = (*_pacman.begin())->Figure();
 					gameObjects_[k][Y_SIZE - 1] = (*_fields.begin())->Figure();
 				}
+				return;
 				//add ghosts collision
 			}
 		}
-		else if (key == "END")
+		if (key == "END")
 		{
 			quick_exit(0);
 		}
-		else
+
 		{
 			int dir = (*_pacman.begin())->getDirection();
 
@@ -940,10 +1001,18 @@ void Controller::PacmanActions()
 								{
 									int x = a->getStartPosition().first;
 									int y = a->getStartPosition().second;
+									int x1 = a->getPosition().first;
+									int y1 = a->getPosition().second;
+									gameObjects_[x1][y1] = a->getLowField();
 									a->setPosition(x, y);
-									a->setStatus("SCATTER");
+
+									if (a->getPrevState() == 0)
+										a->setStatus("SCATTER");
+									else
+										a->setStatus("CHASE");
+
+									a->setChaseCount(4);
 									a->setDoorPassed(false);
-									a->Character();
 									a->setDirection("LEFT");
 									gameObjects_[x][y] = a->Figure();
 								}
@@ -1091,8 +1160,17 @@ void Controller::PacmanActions()
 								{
 									int x = a->getStartPosition().first;
 									int y = a->getStartPosition().second;
+									int x1 = a->getPosition().first;
+									int y1 = a->getPosition().second;
+									gameObjects_[x1][y1] = a->getLowField();
 									a->setPosition(x, y);
-									a->setStatus("SCATTER");
+
+									if (a->getPrevState() == 0)
+										a->setStatus("SCATTER");
+									else
+										a->setStatus("CHASE");
+
+									a->setChaseCount(4);
 									a->setDoorPassed(false);
 									a->setDirection("LEFT");
 									gameObjects_[x][y] = a->Figure();
@@ -1245,8 +1323,17 @@ void Controller::PacmanActions()
 									{
 										int x = a->getStartPosition().first;
 										int y = a->getStartPosition().second;
+										int x1 = a->getPosition().first;
+										int y1 = a->getPosition().second;
+										gameObjects_[x1][y1] = a->getLowField();
 										a->setPosition(x, y);
-										a->setStatus("SCATTER");
+
+										if (a->getPrevState() == 0)
+											a->setStatus("SCATTER");
+										else
+											a->setStatus("CHASE");
+
+										a->setChaseCount(4);
 										a->setDoorPassed(false);
 										a->setDirection("LEFT");
 										gameObjects_[x][y] = a->Figure();
@@ -1412,8 +1499,17 @@ void Controller::PacmanActions()
 									{
 										int x = a->getStartPosition().first;
 										int y = a->getStartPosition().second;
+										int x1 = a->getPosition().first;
+										int y1 = a->getPosition().second;
+										gameObjects_[x1][y1] = a->getLowField();
 										a->setPosition(x, y);
-										a->setStatus("SCATTER");
+
+										if (a->getPrevState() == 0)
+											a->setStatus("SCATTER");
+										else
+											a->setStatus("CHASE");
+
+										a->setChaseCount(4);
 										a->setDoorPassed(false);
 										a->setDirection("LEFT");
 										gameObjects_[x][y] = a->Figure();
@@ -1477,65 +1573,76 @@ void Controller::GhostsActions()
 	for (auto a : _ghosts)
 	{
 		a->UpdateDeltaTime();
-		if (a->Update())
+		if (a->StartCondition(info_))
 		{
-			std::pair<int, int> p1 = a->getPosition();//old position		
-			//if (a->GetStatus() == 0 && !a->GetDoorLock() && p1.first == 12 && p1.second == 14)
-			//{
-			//	a->SetStatus("SCATTER");
-			//	a->SetDoorLock(true);
-			//}
-			std::pair<int, int> p2 = a->Go((*_pacman.begin())->getPosition());//future position
-			gameObjects_[p1.first][p1.second] = a->getLowField();
-			int status = a->getStatus();
-			a->setPosition(p2.first, p2.second);
-
-			status == 2 ? a->setSpeed(5) : a->setSpeed(8);
-
-			if (a->CheckPacman((*_pacman.begin())->getPosition()))
+			if (a->Update())
 			{
-				if (a->getStatus() == 2)
+				a->CheckMode();
+				std::pair<int, int> p1 = a->getPosition();//old position		
+				a->setTarget((*_pacman.begin()));
+				std::pair<int, int> p2 = a->Go();//future position
+				gameObjects_[p1.first][p1.second] = a->getLowField();
+				int status = a->getStatus();
+				a->setPosition(p2.first, p2.second);
+
+				status == 2 ? a->setSpeed(5) : a->setSpeed(8);
+
+				if (a->CheckPacman((*_pacman.begin())->getPosition()))
 				{
-					int x = a->getStartPosition().first + 4;
-					int y = a->getStartPosition().second;
+					if (a->getStatus() == 2)
+					{
+						int x = a->getStartPosition().first + 4;
+						int y = a->getStartPosition().second;
 
-					gameObjects_[p2.first][p2.second] = (*_pacman.begin())->Figure();
-					a->setLowField(gameObjects_[x][y]);
-					info_->Eat(200);
+						gameObjects_[p2.first][p2.second] = (*_pacman.begin())->Figure();
+						a->setLowField(gameObjects_[x][y]);
+						info_->Eat(200);//fix
 
-					a->setPosition(x, y);//fix start position
-					a->setStatus("CHASE");
-					a->setDoorPassed(false);
-					a->setDirection("UP");
-					gameObjects_[x][y] = a->Figure();
+						a->setLowField((*_fields.begin())->Figure());
+						a->setPosition(x, y);//fix start position
+						a->setStatus("CHASE");
+						a->setDoorPassed(false);
+						a->setDirection("UP");
+						gameObjects_[x][y] = a->Figure();
+					}
+					else
+					{
+						info_->DecreaseHP();
+						gameObjects_[p2.first][p2.second] = (*_fields.begin())->Figure();
+
+						int q = (*_pacman.begin())->getStartPosition().first;
+						int w = (*_pacman.begin())->getStartPosition().second;
+						(*_pacman.begin())->setPosition(q, w);
+						gameObjects_[q][w] = (*_pacman.begin())->Figure();
+						for (auto b : _ghosts)
+						{
+							int x = b->getStartPosition().first;
+							int y = b->getStartPosition().second;
+							int x1 = b->getPosition().first;
+							int y1 = b->getPosition().second;
+							gameObjects_[x1][y1] = b->getLowField();
+
+							b->setLowField(gameObjects_[x][y]);
+							b->setPosition(x, y);
+
+							if(b->getPrevState() == 0)
+								b->setStatus("SCATTER");
+							else
+								b->setStatus("CHASE");
+
+							b->setChaseCount(4);
+							b->setDoorPassed(false);
+							b->setDirection("LEFT");
+							gameObjects_[x][y] = a->Figure();
+						}
+						break;
+					}
 				}
 				else
 				{
-					info_->DecreaseHP();
-					gameObjects_[p2.first][p2.second] = (*_fields.begin())->Figure();
-
-					int q = (*_pacman.begin())->getStartPosition().first;
-					int w = (*_pacman.begin())->getStartPosition().second;
-					(*_pacman.begin())->setPosition(q, w);
-					gameObjects_[q][w] = (*_pacman.begin())->Figure();
-					for (auto b : _ghosts)
-					{
-						int x = b->getStartPosition().first;
-						int y = b->getStartPosition().second;
-						b->setLowField(gameObjects_[x][y]);
-						b->setPosition(x, y);
-						b->setStatus("SCATTER");
-						b->setDoorPassed(false);
-						b->setDirection("LEFT");
-						gameObjects_[x][y] = a->Figure();
-					}
-					break;
+					a->setLowField(gameObjects_[p2.first][p2.second]);
+					gameObjects_[p2.first][p2.second] = a->Figure();
 				}
-			}
-			else
-			{
-				a->setLowField(gameObjects_[p2.first][p2.second]);
-				gameObjects_[p2.first][p2.second] = a->Figure();
 			}
 		}
 	}
@@ -1559,12 +1666,32 @@ void Controller::UpdateFruits()
 
 void Controller::Run()
 {
-	this->Start();
-	while (true)
+	//Menu();
+	for (; info_->currentlevel < info_->MAX_LEVEL; info_->currentlevel++)
 	{
-		key = this->Input();
-		this->Logic();
-		this->Draw(gameObjects_);
+		system("cls");
+		this->Start();
+		while (!info_->getCheckLevel())
+		{
+			CheckAlive();
+			key = this->Input();
+			this->Logic();
+			this->Draw(gameObjects_);
+		}
+		GlobalCleaning();
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));//1 second
 	}
+}
 
+void Controller::GlobalCleaning()
+{
+	gameObjects_.clear();
+	_borders.clear();
+	_coins.clear();
+	_fields.clear();
+	_pacman.clear();
+	_booster.clear();
+	_fruits.clear();
+	_ghosts.clear();
+	info_->setCheckLevel(false, false);
 }

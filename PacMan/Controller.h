@@ -8,7 +8,8 @@
 #include "Pacman.h"
 #include "Booster.h"
 #include "Fruits.h"
-#include "Blinky.h"
+#include "Ghosts.h"
+
 #include <vector>
 #include <string>
 
@@ -23,9 +24,13 @@ public:
 
 	void Start();
 
+	void CheckAlive();
+
 	void Logic();
 
 	void Run() override;
+
+	void GlobalCleaning();
 
 private:
 	 std::vector<std::vector<std::pair<char, int>>> gameObjects_;

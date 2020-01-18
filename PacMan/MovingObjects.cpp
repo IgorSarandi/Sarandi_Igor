@@ -46,6 +46,11 @@ void MovingObjects::setDirection(std::string current_direction)
 	current_direction_ = current_direction;
 }
 
+std::chrono::time_point<std::chrono::steady_clock> MovingObjects::getPresentTime() const
+{
+	return oldtime_;
+}
+
 void MovingObjects::UpdateLand(std::vector<std::vector<int>> crMap)
 {
 	land_ = crMap;

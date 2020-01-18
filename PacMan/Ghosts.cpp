@@ -5,9 +5,11 @@
 
 
 Ghosts::Ghosts() : 
-	status { {"CHASE", 0}, {"SCATTER", 1}, {"FRIGHTENED", 2} }, doorCoord_(12, 14), lowfield_(' ', 1), doorPassed_(false)
+	status { {"CHASE", 0}, {"SCATTER", 1}, {"FRIGHTENED", 2} }, doorCoord_(12, 14), current_status_("SCATTER"), 
+	lowfield_(' ', 1), chasecount_(4), doorPassed_(false), deltatime_(0), prevstate_(0)
 {
 	this->setDirection("LEFT");
+	oldtime_ = this->getPresentTime();
 }
 
 
@@ -27,6 +29,7 @@ int Ghosts::getStatus() const
 
 void Ghosts::setStatus(std::string current_status)
 {
+	prevstate_ = this->getStatus();
 	current_status_ = current_status;
 	int x = this->getPosition().first;
 	int y = this->getPosition().second;
@@ -289,9 +292,10 @@ std::pair<int, int> Ghosts::FindTargetDirect(std::pair<int, int> target)//fix
 	}
 }
 
-std::pair<int, int> Ghosts::Go(std::pair<int, int> pac)
+std::pair<int, int> Ghosts::Go()
 {
-	int st = this->getStatus();
+	this->Character();
+	int state = this->getStatus();
 	bool door = this->getDoorPassed();
 
 	if (!door)
@@ -300,10 +304,10 @@ std::pair<int, int> Ghosts::Go(std::pair<int, int> pac)
 	}
 	else
 	{
-		switch (st)
+		switch (state)
 		{
 		case 0://CHASE
-			return this->FindTargetDirect(pac);
+			return this->FindTargetDirect(getTarget());
 			break;
 		case 1://SCATTER
 			return this->FindTargetDirect(this->getTargetField());
@@ -313,4 +317,72 @@ std::pair<int, int> Ghosts::Go(std::pair<int, int> pac)
 			break;
 		}
 	}
+}
+
+void Ghosts::CheckMode()
+{
+	int state = this->getStatus();
+	std::chrono::time_point<std::chrono::steady_clock> currenttime = this->getPresentTime();
+	deltatime_ = static_cast<float>(std::chrono::duration_cast<std::chrono::duration<double>>(currenttime - oldtime_).count());
+
+	switch (state)
+	{
+	case 0://CHASE
+		if (chasecount_ > 0)
+		{
+			if (deltatime_ >= 20)
+			{
+				this->setStatus("SCATTER");
+				oldtime_ = currenttime;
+			}
+		}
+		break;
+	case 1://SCATTER
+		if (chasecount_ > 2)
+		{
+			if (deltatime_ >= 7)
+			{
+				this->setStatus("CHASE");
+				oldtime_ = currenttime;
+				chasecount_--;
+			}
+			return;
+		}
+		if (chasecount_ > 0)
+		{
+			if (deltatime_ >= 5)
+			{
+				this->setStatus("CHASE");
+				oldtime_ = currenttime;
+				chasecount_--;
+			}
+			return;
+		}
+		break;
+	default://FRIGHTENED
+		if (deltatime_ >= 13)
+		{
+			if (prevstate_ == 0)
+			{
+				this->setStatus("CHASE");
+				oldtime_ = currenttime;
+			}
+			else
+			{
+				this->setStatus("SCATTER");
+				oldtime_ = currenttime;
+			}
+		}
+		break;
+	}
+}
+
+void Ghosts::setChaseCount(int chasecount)
+{
+	chasecount_ = chasecount;
+}
+
+int Ghosts::getPrevState() const
+{
+	return prevstate_;
 }
