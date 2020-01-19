@@ -56,6 +56,11 @@ void MovingObjects::UpdateLand(std::vector<std::vector<int>> crMap)
 	land_ = crMap;
 }
 
+const std::map<std::string, int>& MovingObjects::getAllDirections() const
+{
+	return directions;
+}
+
 bool MovingObjects::Update()
 {
 	delta_ += deltatime_ * speed_;

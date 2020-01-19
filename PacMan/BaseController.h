@@ -10,10 +10,10 @@ class BaseController
 {
 public:
 
-	BaseController(int, int);//params is size by vertical and horisontal
+	BaseController(const int X, const int Y);
 	virtual ~BaseController();
 
-	std::string Input();
+	int Input();
 
 	virtual void Run() = 0;	//run game loop
 
@@ -25,8 +25,7 @@ public:
 
 	const std::map<std::string, int> colors;
 
-protected:
-	Info* info_;
+	Info* info;
 
 private:
 	HANDLE  hConsole_;

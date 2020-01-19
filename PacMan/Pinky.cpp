@@ -1,5 +1,4 @@
 #include "Pinky.h"
-#include "Pacman.h"
 
 
 
@@ -22,28 +21,6 @@ std::pair<char, int> Pinky::Figure()
 	{
 		return std::make_pair(char(2), 145);
 	}
-	//if (this->getStatus() == 0)
-	//{
-	//	return std::make_pair(char(2), 9);//CHASE
-	//}
-	//else if (this->getStatus() == 1)
-	//{
-	//	return std::make_pair(char(2), 11);//SCATTER
-	//}
-	//else
-	//{
-	//	return std::make_pair(char(2), 14);//FRIGHTENED
-	//}
-}
-
-void Pinky::Character()
-{
-
-}
-
-bool Pinky::StartCondition(Info * info)
-{
-	return true;
 }
 
 void Pinky::setTarget(Pacman * pac)

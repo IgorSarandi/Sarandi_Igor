@@ -3,9 +3,8 @@
 #include <random>
 
 
-
 Ghosts::Ghosts() : 
-	status { {"CHASE", 0}, {"SCATTER", 1}, {"FRIGHTENED", 2} }, doorCoord_(12, 14), current_status_("SCATTER"), 
+	status { {"CHASE", 0}, {"SCATTER", 1}, {"FRIGHTENED", 2} }, doorCoord_(12, 14), doorFigure_(char(30), 4), current_status_("SCATTER"),
 	lowfield_(' ', 1), chasecount_(4), doorPassed_(false), deltatime_(0), prevstate_(0)
 {
 	this->setDirection("LEFT");
@@ -30,6 +29,8 @@ int Ghosts::getStatus() const
 void Ghosts::setStatus(std::string current_status)
 {
 	prevstate_ = this->getStatus();
+	oldtime_ = this->getPresentTime();
+
 	current_status_ = current_status;
 	int x = this->getPosition().first;
 	int y = this->getPosition().second;
@@ -319,58 +320,60 @@ std::pair<int, int> Ghosts::Go()
 	}
 }
 
-void Ghosts::CheckMode()
+void Ghosts::CheckMode()//fix
 {
 	int state = this->getStatus();
 	std::chrono::time_point<std::chrono::steady_clock> currenttime = this->getPresentTime();
 	deltatime_ = static_cast<float>(std::chrono::duration_cast<std::chrono::duration<double>>(currenttime - oldtime_).count());
-
+	
 	switch (state)
 	{
 	case 0://CHASE
 		if (chasecount_ > 0)
 		{
-			if (deltatime_ >= 20)
+			if (deltatime_ >= 3)//20
 			{
 				this->setStatus("SCATTER");
-				oldtime_ = currenttime;
 			}
 		}
 		break;
 	case 1://SCATTER
 		if (chasecount_ > 2)
 		{
-			if (deltatime_ >= 7)
+			if (deltatime_ >= 3)//7
 			{
 				this->setStatus("CHASE");
-				oldtime_ = currenttime;
 				chasecount_--;
 			}
 			return;
 		}
 		if (chasecount_ > 0)
 		{
-			if (deltatime_ >= 5)
+			if (deltatime_ >= 3)//5
 			{
 				this->setStatus("CHASE");
-				oldtime_ = currenttime;
 				chasecount_--;
 			}
 			return;
 		}
 		break;
 	default://FRIGHTENED
-		if (deltatime_ >= 13)
+		if (deltatime_ >= 10)
 		{
 			if (prevstate_ == 0)
 			{
 				this->setStatus("CHASE");
-				oldtime_ = currenttime;
 			}
 			else
 			{
 				this->setStatus("SCATTER");
-				oldtime_ = currenttime;
+			}
+		}
+		else
+		{
+			if (prevstate_ == 2)
+			{
+				prevstate_ = 1;
 			}
 		}
 		break;
@@ -385,4 +388,29 @@ void Ghosts::setChaseCount(int chasecount)
 int Ghosts::getPrevState() const
 {
 	return prevstate_;
+}
+
+std::pair<int, int> Ghosts::getDoorPosition() const
+{
+	return doorCoord_;
+}
+
+std::pair<int, int> Ghosts::getDoorFigure() const
+{
+	return doorFigure_;
+}
+
+void Ghosts::Character()
+{
+	return;
+}
+
+bool Ghosts::StartCondition(const Info& info)
+{
+	return true;
+}
+
+void Ghosts::setCoins(const Info & info)
+{
+	return;
 }

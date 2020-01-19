@@ -2,14 +2,14 @@
 #include <iostream>
 
 
-BaseController::BaseController(int xSize, int ySize) : X_SIZE(xSize), Y_SIZE(ySize),
+BaseController::BaseController(const int xSize, const int ySize) : X_SIZE(xSize), Y_SIZE(ySize),
 	colors{ {"GREEN", 10}, {"RED", 12}, {"WHITE", 15} }
 {
 	hConsole_ = GetStdHandle(STD_OUTPUT_HANDLE);
-	bufferSize_ = { static_cast<SHORT>(X_SIZE + 1), static_cast<SHORT>(Y_SIZE + 10) };
+	bufferSize_ = { static_cast<SHORT>(X_SIZE - 2), static_cast<SHORT>(Y_SIZE + 10) };//+1
 	src_ = { 0, 0, bufferSize_.X - 1,bufferSize_.Y - 1 };
 
-	info_ = new Info(8, 0, 0, 0, 0);
+	info = new Info(8, 1, 0, 0, 0);
 
 	
 }
@@ -19,34 +19,46 @@ BaseController::~BaseController()
 {
 }
 
-std::string BaseController::Input()
+int BaseController::Input()
 {
+	//UP
 	if (GetAsyncKeyState(87) //is W
 		|| GetAsyncKeyState(119) // is w
 		|| GetAsyncKeyState(38)) // is ^
-		return "UP";
-	else if (GetAsyncKeyState(65) // is A
-		|| GetAsyncKeyState(97) // is a
-		|| GetAsyncKeyState(37)) // is <
-		return "LEFT";
+		return 0;
+	//DOWN
 	else if (GetAsyncKeyState(83) // is S
 		|| GetAsyncKeyState(115) // is s
 		|| GetAsyncKeyState(40)) // is v
-		return "DOWN";
+		return 1;
+	//LEFT
+	else if (GetAsyncKeyState(65) // is A
+		|| GetAsyncKeyState(97) // is a
+		|| GetAsyncKeyState(37)) // is <
+		return 2;
+	//Right
 	else if (GetAsyncKeyState(68) // is D
 		|| GetAsyncKeyState(100) // is d
 		|| GetAsyncKeyState(39)) // is >
-		return "RIGHT";
+		return 3;
+	//END
 	else if (GetAsyncKeyState(VK_ESCAPE)) // is Esc
-		return "END";
+		return -1;
+	//NULL
 	else
-		return "NULL";
+		return INT_MAX;
 }
 
 
 
-void BaseController::Draw(std::vector<std::vector<std::pair<char, int>>>& objects)
+void BaseController::Draw(std::vector<std::vector<std::pair<char, int>>>& objects)//fix
 {
+	/*HANDLE hc = GetStdHandle(STD_OUTPUT_HANDLE);
+	for (int k = 1; k < 255; k++)
+	{
+		SetConsoleTextAttribute(hc, k);
+		std::cout << k << " Hello world!" << std::endl;
+	}*/
 	SetConsoleWindowInfo(hConsole_, true, &src_);
 	SetConsoleScreenBufferSize(hConsole_, bufferSize_);
 	SetConsoleTitle("Pac-man");
@@ -55,12 +67,12 @@ void BaseController::Draw(std::vector<std::vector<std::pair<char, int>>>& object
 	SetConsoleCursorPosition(hConsole_, bufferSize_);
 
 	SetConsoleTextAttribute(hConsole_, colors.at("GREEN"));
-	std::cout << info_->remainboosters << " boosters left" << std::endl;
+	std::cout << info->remainboosters << " boosters left" << std::endl;
 	SetConsoleTextAttribute(hConsole_, colors.at("WHITE"));
-	if (info_->remaincoins >= 100)
-		std::cout << info_->remaincoins << " coins left" << std::endl;
+	if (info->remaincoins >= 100)
+		std::cout << info->remaincoins << " coins left" << std::endl;
 	else
-		std::cout << info_->remaincoins << " coins left " << std::endl;
+		std::cout << info->remaincoins << " coins left " << std::endl;
 	std::cout << std::endl;
 
 	for (int i = 0; i < static_cast<int>(objects.size()); i++)
@@ -77,19 +89,19 @@ void BaseController::Draw(std::vector<std::vector<std::pair<char, int>>>& object
 	SetConsoleTextAttribute(hConsole_, colors.at("WHITE"));
 	std::cout << "Level: ";
 	SetConsoleTextAttribute(hConsole_, colors.at("RED"));
-	std::cout << static_cast<int>(info_->currentlevel);
+	std::cout << static_cast<int>(info->currentlevel);
 	SetConsoleTextAttribute(hConsole_, colors.at("GREEN"));
-	std::cout << "\t" << info_->getLastFruits();
+	std::cout << "\t" << info->getLastFruits();
 
 	std::cout << std::endl;
 	SetConsoleTextAttribute(hConsole_, colors.at("WHITE"));
 	std::cout << "Lives: ";
 	SetConsoleTextAttribute(hConsole_, colors.at("RED"));
-	std::cout << info_->getHealth();
+	std::cout << info->getHealth();
 
 	std::cout << std::endl;
 	SetConsoleTextAttribute(hConsole_, colors.at("WHITE"));
 	std::cout << "Score: ";
 	SetConsoleTextAttribute(hConsole_, colors.at("RED"));
-	std::cout << info_->getScore();
+	std::cout << info->getScore();
 }

@@ -1,5 +1,8 @@
 #pragma once
 #include "Ghosts.h"
+#include "Info.h"
+#include "Pacman.h"
+
 class Pinky :
 	public Ghosts
 {
@@ -8,10 +11,6 @@ public:
 	~Pinky();
 
 	std::pair<char, int> Figure() override;
-
-	void Character() override;
-
-	bool StartCondition(Info*) override;
 
 	void setTarget(Pacman*) override;
 

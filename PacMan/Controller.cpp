@@ -1,8 +1,8 @@
 #include "Controller.h"
 #include "Blinky.h"
 #include "Pinky.h"
+#include "Inky.h"
 #include <thread>
-
 
 Controller::Controller(int sizeX, int sizeY) : BaseController(sizeX, sizeY)
 {
@@ -127,21 +127,36 @@ void Controller::Start()
 	gameObjects_[pinky->getPosition().first][pinky->getPosition().second] = pinky->Figure();
 	_ghosts.push_back(pinky);
 
+	Inky* inky = new Inky(*blinky);
+	inky->setSpeed(8);
+	inky->setDoorPassed(false);
+	inky->setStartPosition(14, 11);
+	inky->setPosition(inky->getStartPosition().first, inky->getStartPosition().second);
+	inky->UpdateLand(crMap->globalMap());
+	inky->setStatus("SCATTER");
+	inky->setDirection("LEFT");
+	inky->setLowField((*_fields.begin())->Figure());
+	inky->setTargetField(std::make_pair(X_SIZE - 1, Y_SIZE - 1));
+	gameObjects_[inky->getPosition().first][inky->getPosition().second] = inky->Figure();
+	_ghosts.push_back(inky);
+
 
 	_fruits.resize(2);
 
-	info_->remainboosters = static_cast<int>(_booster.size());
-	info_->remaincoins = static_cast<int>(_coins.size());
-	info_->totalcoins = 0;
+	info->remainboosters = static_cast<int>(_booster.size());
+	info->remaincoins = static_cast<int>(_coins.size());
+	info->totalcoins = 0;
+
+	inky->setCoins(*info);
 }
 
 void Controller::CheckAlive()
 {
-	if (info_->getHealth().empty())
+	if (info->getHealth().empty())
 	{
 		system("cls");
 		std::cerr << "YOU LOSE" << std::endl;
-		std::cerr << "Your SCORE is: " << info_->getScore() << std::endl;
+		std::cerr << "Your SCORE is: " << info->getScore() << std::endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));//0.5 seconds
 		system("pause");
 		quick_exit(1);
@@ -153,24 +168,20 @@ void Controller::Logic()
 	this->PacmanActions();
 	this->UpdateFruits();
 	this->GhostsActions();
-	this->info_->setCheckLevel(_coins.empty(), _booster.empty());
+	this->info->setCheckLevel(_coins.empty(), _booster.empty());
 	/*if(_booster.size() < 1)
-		this->info_->setCheckLevel(true, true);*/
+		this->info->setCheckLevel(true, true);*/
 }
 
 void Controller::PacmanActions()
 {
+	if (key == -1)
+	{
+		quick_exit(0);
+	}
 	std::pair<char, int> obj;
 
-	std::vector<Border*> borders(_borders);//0
-	std::vector<Coins*> coins(_coins);//1
-	std::vector<Field*> fields(_fields);//2
-	std::vector<Pacman*> pacman(_pacman);//3
-	std::vector<Booster*> booster(_booster);//4
-	std::vector<Fruits*> fruits(_fruits);//5
-	std::vector<Ghosts*> ghosts(_ghosts);//6
-
-	auto lambdafruit = [fruits]()
+	auto lambdafruit = [&fruits = _fruits]()
 	{
 		for (auto a : fruits)
 		{
@@ -179,7 +190,7 @@ void Controller::PacmanActions()
 		}
 		return false;
 	};
-	auto lambdaghost = [ghosts, &obj]()
+	auto lambdaghost = [&ghosts = _ghosts, &obj]()
 	{
 		for (auto a : ghosts)
 		{
@@ -192,1380 +203,233 @@ void Controller::PacmanActions()
 	(*_pacman.begin())->UpdateDeltaTime();
 	if ((*_pacman.begin())->Update())
 	{
-		if (key == "UP")
+		const int dx[4] = { -1, 1, 0, 0 };
+		const int dy[4] = { 0, 0, -1, 1 };
+		const std::string dirs[4] = {"UP","DOWN","LEFT","RIGHT"};
+
+
+		const int k = (*_pacman.begin())->getPosition().first;
+		const int m = (*_pacman.begin())->getPosition().second;
+
+		const int dir = (*_pacman.begin())->getDirection() + 4;
+		const std::map<std::string, int>& all_directions = (*_pacman.begin())->getAllDirections();
+
+		for (int i = 0; i < 8; i++) //4 key + 4 directions
 		{
-			int k = (*_pacman.begin())->getPosition().first;
-			int m = (*_pacman.begin())->getPosition().second;
-			obj = gameObjects_[k - 1][m];
-
-			//стены
-			if (obj == (*_borders.begin())->Figure())
+			if (i == key || i == dir)
 			{
-				gameObjects_[k][m] = (*_pacman.begin())->Figure();
-			}
-			else
-			{
-				(*_pacman.begin())->setDirection(key);
-
-				//поле
-				if (obj == (*_fields.begin())->Figure())
+				if (i == 2 || i == 6) //LEFT
 				{
-					k = (*_pacman.begin())->getPosition().first - 1;
-					m = (*_pacman.begin())->getPosition().second;
-					(*_pacman.begin())->setPosition(k, m);
-					(*_pacman.begin())->setSpeed(10);
-					gameObjects_[k][m] = (*_pacman.begin())->Figure();
-					gameObjects_[k + 1][m] = (*_fields.begin())->Figure();
-				}
-				//чеканные монеты
-				else if (obj == (*_coins.begin())->Figure())
-				{
-					k = (*_pacman.begin())->getPosition().first - 1;
-					m = (*_pacman.begin())->getPosition().second;
-					(*_pacman.begin())->setPosition(k, m);
-					(*_pacman.begin())->setSpeed(7);
-					gameObjects_[k][m] = (*_pacman.begin())->Figure();
-					gameObjects_[k + 1][m] = (*_fields.begin())->Figure();
-					info_->Eat(10);
-					info_->totalcoins++;
-					info_->remaincoins--;
-
-					for (auto a : _coins)
+					if (m == 0)
 					{
-						if (a->getPosition() == (*_pacman.begin())->getPosition())
+						int new_m = Y_SIZE - 1;
+						obj = gameObjects_[k][new_m];
+						
+						if (obj == (*_fields.begin())->Figure()) //go through the tunnel
 						{
-							auto it = std::find(_coins.begin(), _coins.end(), a);
-							(*it)->Destroy();
-							_coins.erase(it);
+							this->PacmanUpdate(k, m, k, new_m, 10);
 						}
+						return;
 					}
 				}
-				//energizer
-				else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
+				if (i == 3 || i == 7) //RIGHT
 				{
-					k = (*_pacman.begin())->getPosition().first - 1;
-					m = (*_pacman.begin())->getPosition().second;
-					(*_pacman.begin())->setPosition(k, m);
-					(*_pacman.begin())->setSpeed(7);;
-					gameObjects_[k][m] = (*_pacman.begin())->Figure();
-					gameObjects_[k + 1][m] = (*_fields.begin())->Figure();
-					info_->Eat(50);
-					info_->remainboosters--;
-
-					for (auto a : _booster)
+					if (m == Y_SIZE - 1)
 					{
-						if (a->getPosition() == (*_pacman.begin())->getPosition())
+						int new_m = 0;
+						obj = gameObjects_[k][new_m];
+						
+						if (obj == (*_fields.begin())->Figure()) //go through the tunnel
 						{
-							auto it = std::find(_booster.begin(), _booster.end(), a);
-							(*it)->Destroy();
-							_booster.erase(it);
+							this->PacmanUpdate(k, m, k, new_m, 10);
 						}
-					}
-					for (auto a : _ghosts)
-					{
-						a->setStatus("FRIGHTENED");
-						gameObjects_[a->getPosition().first][a->getPosition().second] = a->Figure();
+						return;
 					}
 				}
-				//враги
-				else if (lambdaghost())
+				
+				int new_i = i > 3 ? i - 4 : i;
+				const int k1 = k + dx[new_i];
+				const int m1 = m + dy[new_i];
+				obj = gameObjects_[k1][m1];
+				
+				auto lambda_new_dir = [&new_i, &all_directions]()
 				{
-					k = (*_pacman.begin())->getPosition().first - 1;
-					m = (*_pacman.begin())->getPosition().second;
-					for (auto a : _ghosts)
+					for (auto a : all_directions)
 					{
-						int x = a->getPosition().first;
-						int y = a->getPosition().second;
-						a->setSpeed(8);
-
-						if (k == x && m == y && a->getStatus() == 2)
+						if (a.second == new_i)
 						{
-							(*_pacman.begin())->setPosition(k, m);
-							(*_pacman.begin())->setSpeed(10);;
-							gameObjects_[k][m] = (*_pacman.begin())->Figure();
-							gameObjects_[k + 1][m] = (*_fields.begin())->Figure();
-							info_->Eat(200);
-
-							x = a->getStartPosition().first + 4;
-							y = a->getStartPosition().second;
-							a->setLowField((*_fields.begin())->Figure());
-							a->setPosition(x, y);
-							a->setStatus("CHASE");
-							a->setDoorPassed(false);
-							a->setDirection("UP");
-							gameObjects_[x][y] = a->Figure();
-						}
-						else if (k == x && m == y && a->getStatus() != 2)
-						{
-							info_->DecreaseHP();
-							gameObjects_[k][m] = (*_fields.begin())->Figure();
-							gameObjects_[k + 1][m] = (*_fields.begin())->Figure();
-							int q = (*_pacman.begin())->getStartPosition().first;
-							int w = (*_pacman.begin())->getStartPosition().second;
-							(*_pacman.begin())->setPosition(q, w);
-							(*_pacman.begin())->setSpeed(7);;
-							gameObjects_[q][w] = (*_pacman.begin())->Figure();
-							for (auto a : _ghosts)
-							{
-								int x = a->getStartPosition().first;
-								int y = a->getStartPosition().second;
-								int x1 = a->getPosition().first;
-								int y1 = a->getPosition().second;
-								gameObjects_[x1][y1] = a->getLowField();
-								a->setPosition(x, y);
-
-								if (a->getPrevState() == 0)
-									a->setStatus("SCATTER");
-								else
-									a->setStatus("CHASE");
-
-								a->setChaseCount(4);
-								a->setDoorPassed(false);
-								a->setDirection("LEFT");
-								gameObjects_[x][y] = a->Figure();
-							}
+							return a.first;
 						}
 					}
-				}
-				//фрукты
-				else if (lambdafruit())
-				{
-					for (auto a : _fruits)
-					{
-						if (a != nullptr && obj == a->Figure())
-						{
-							Fruits* fr = dynamic_cast<Fruits*>(a);
-							k = (*_pacman.begin())->getPosition().first - 1;
-							m = (*_pacman.begin())->getPosition().second;
-							if (std::make_pair(k, m) != a->getPosition()) continue;
+					return (*all_directions.begin()).first;
+				};
 
-							(*_pacman.begin())->setPosition(k, m);
-							(*_pacman.begin())->setSpeed(7);;
-							gameObjects_[k][m] = (*_pacman.begin())->Figure();
-							gameObjects_[k + 1][m] = (*_fields.begin())->Figure();
-							info_->Eat(fr->CalculateScore(info_->currentlevel));
-							info_->addFruit(fr->Figure());
-							fr->Destroy();
-							auto it = std::find(_fruits.begin(), _fruits.end(), a);
-							*it = nullptr;
-							break;
-						}
-					}
-				}
-				return;
-			}
-		}
-		if (key == "DOWN")
-		{
-			int k = (*_pacman.begin())->getPosition().first;
-			int m = (*_pacman.begin())->getPosition().second;
-			obj = gameObjects_[k + 1][m];
-
-			//стены
-			if (obj == (*_borders.begin())->Figure())
-			{
-				gameObjects_[k][m] = (*_pacman.begin())->Figure();
-			}
-			else
-			{
-				(*_pacman.begin())->setDirection(key);
-				if (obj == (*_fields.begin())->Figure())
-				{
-					k = (*_pacman.begin())->getPosition().first + 1;
-					m = (*_pacman.begin())->getPosition().second;
-					(*_pacman.begin())->setPosition(k, m);
-					(*_pacman.begin())->setSpeed(10);;
-					gameObjects_[k][m] = (*_pacman.begin())->Figure();
-					gameObjects_[k - 1][m] = (*_fields.begin())->Figure();
-				}
-				//чеканные монеты
-				else if (obj == (*_coins.begin())->Figure())
-				{
-					k = (*_pacman.begin())->getPosition().first + 1;
-					m = (*_pacman.begin())->getPosition().second;
-					(*_pacman.begin())->setPosition(k, m);
-					(*_pacman.begin())->setSpeed(7);;
-					gameObjects_[k][m] = (*_pacman.begin())->Figure();
-					gameObjects_[k - 1][m] = (*_fields.begin())->Figure();
-					info_->Eat(10);
-					info_->totalcoins++;
-					info_->remaincoins--;
-
-					for (auto a : _coins)
-					{
-						if (a->getPosition() == (*_pacman.begin())->getPosition())
-						{
-							auto it = std::find(_coins.begin(), _coins.end(), a);
-							(*it)->Destroy();
-							_coins.erase(it);
-						}
-					}
-				}
-				//energizer
-				else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
-				{
-					k = (*_pacman.begin())->getPosition().first + 1;
-					m = (*_pacman.begin())->getPosition().second;
-					(*_pacman.begin())->setPosition(k, m);
-					(*_pacman.begin())->setSpeed(7);;
-					gameObjects_[k][m] = (*_pacman.begin())->Figure();
-					gameObjects_[k - 1][m] = (*_fields.begin())->Figure();
-					info_->Eat(50);
-					info_->remainboosters--;
-
-					for (auto a : _booster)
-					{
-						if (a->getPosition() == (*_pacman.begin())->getPosition())
-						{
-							auto it = std::find(_booster.begin(), _booster.end(), a);
-							(*it)->Destroy();
-							_booster.erase(it);
-						}
-					}
-					for (auto a : _ghosts)
-					{
-						a->setStatus("FRIGHTENED");
-						gameObjects_[a->getPosition().first][a->getPosition().second] = a->Figure();
-					}
-				}
-				//враги
-				else if (lambdaghost())
-				{
-					k = (*_pacman.begin())->getPosition().first + 1;
-					m = (*_pacman.begin())->getPosition().second;
-					for (auto a : _ghosts)
-					{
-						int x = a->getPosition().first;
-						int y = a->getPosition().second;
-						a->setSpeed(8);
-
-						if (k == x && m == y && a->getStatus() == 2)
-						{
-							(*_pacman.begin())->setPosition(k, m);
-							(*_pacman.begin())->setSpeed(10);;
-							gameObjects_[k][m] = (*_pacman.begin())->Figure();
-							gameObjects_[k - 1][m] = (*_fields.begin())->Figure();
-							info_->Eat(200);
-
-							x = a->getStartPosition().first + 4;
-							y = a->getStartPosition().second;
-							a->setLowField((*_fields.begin())->Figure());
-							a->setPosition(x, y);
-							a->setStatus("CHASE");
-							a->setDoorPassed(false);
-							a->setDirection("UP");
-							gameObjects_[x][y] = a->Figure();
-						}
-						else if (k == x && m == y && a->getStatus() != 2)
-						{
-							info_->DecreaseHP();
-							gameObjects_[k][m] = (*_fields.begin())->Figure();
-							gameObjects_[k - 1][m] = (*_fields.begin())->Figure();
-							int q = (*_pacman.begin())->getStartPosition().first;
-							int w = (*_pacman.begin())->getStartPosition().second;
-							(*_pacman.begin())->setPosition(q, w);
-							(*_pacman.begin())->setSpeed(7);
-							gameObjects_[q][w] = (*_pacman.begin())->Figure();
-							for (auto a : _ghosts)
-							{
-								int x = a->getStartPosition().first;
-								int y = a->getStartPosition().second;
-								int x1 = a->getPosition().first;
-								int y1 = a->getPosition().second;
-								gameObjects_[x1][y1] = a->getLowField();
-								a->setPosition(x, y);
-
-								if (a->getPrevState() == 0)
-									a->setStatus("SCATTER");
-								else
-									a->setStatus("CHASE");
-
-								a->setChaseCount(4);
-								a->setDoorPassed(false);
-								a->setDirection("LEFT");
-								gameObjects_[x][y] = a->Figure();
-							}
-						}
-					}
-				}
-				//фрукты
-				else if (lambdafruit())
-				{
-					for (auto a : _fruits)
-					{
-						if (a != nullptr && obj == a->Figure())
-						{
-							Fruits* fr = dynamic_cast<Fruits*>(a);
-							k = (*_pacman.begin())->getPosition().first + 1;
-							m = (*_pacman.begin())->getPosition().second;
-							if (std::make_pair(k, m) != a->getPosition()) continue;
-
-							(*_pacman.begin())->setPosition(k, m);
-							(*_pacman.begin())->setSpeed(7);;
-							gameObjects_[k][m] = (*_pacman.begin())->Figure();
-							gameObjects_[k - 1][m] = (*_fields.begin())->Figure();
-							info_->Eat(fr->CalculateScore(info_->currentlevel));
-							info_->addFruit(fr->Figure());
-							fr->Destroy();
-							auto it = std::find(_fruits.begin(), _fruits.end(), a);
-							*it = nullptr;
-							break;
-						}
-					}
-				}
-				return;
-			}
-		}
-		if (key == "LEFT")
-		{
-			int k = (*_pacman.begin())->getPosition().first;
-			int m = (*_pacman.begin())->getPosition().second;
-
-			if (m)
-			{
-				obj = gameObjects_[k][m - 1];
-
-				//стены
-				if (obj == (*_borders.begin())->Figure())
+				if (obj == (*_borders.begin())->Figure()) //walls
 				{
 					gameObjects_[k][m] = (*_pacman.begin())->Figure();
+					continue;
 				}
 				else
 				{
-					(*_pacman.begin())->setDirection(key);
-					//проход по полям
-					if (obj == (*_fields.begin())->Figure())
-					{
-						k = (*_pacman.begin())->getPosition().first;
-						m = (*_pacman.begin())->getPosition().second - 1;
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(10);;
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k][m + 1] = (*_fields.begin())->Figure();
-					}
-					//чеканные монеты
-					else if (obj == (*_coins.begin())->Figure())
-					{
-						k = (*_pacman.begin())->getPosition().first;
-						m = (*_pacman.begin())->getPosition().second - 1;
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(7);;
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k][m + 1] = (*_fields.begin())->Figure();
-						info_->Eat(10);
-						info_->totalcoins++;
-						info_->remaincoins--;
+					(*_pacman.begin())->setDirection(lambda_new_dir());
 
-						for (auto a : _coins)
+					if (obj == (*_fields.begin())->Figure()) //fields
+					{
+						this->PacmanUpdate(k, m, k1, m1, 10);
+					}
+					else if (obj == (*_coins.begin())->Figure()) //coins
+					{
+						this->PacmanUpdate(k, m, k1, m1, 10);
+						info->Eat(10);
+						info->totalcoins++;
+						info->remaincoins--;
+
+						for (auto it = _coins.begin(); it != _coins.end(); it++)
 						{
-							if (a->getPosition() == (*_pacman.begin())->getPosition())
+							if ((*it)->getPosition() == std::make_pair(k1, m1))
 							{
-								auto it = std::find(_coins.begin(), _coins.end(), a);
 								(*it)->Destroy();
 								_coins.erase(it);
-							}
-						}
-					}
-					//energizer
-					else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
-					{
-						k = (*_pacman.begin())->getPosition().first;
-						m = (*_pacman.begin())->getPosition().second - 1;
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(7);;
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k][m + 1] = (*_fields.begin())->Figure();
-						info_->Eat(50);
-						info_->remainboosters--;
-
-						for (auto a : _booster)
-						{
-							if (a->getPosition() == (*_pacman.begin())->getPosition())
-							{
-								auto it = std::find(_booster.begin(), _booster.end(), a);
-								(*it)->Destroy();
-								_booster.erase(it);
-							}
-						}
-						for (auto a : _ghosts)
-						{
-							a->setStatus("FRIGHTENED");
-							gameObjects_[a->getPosition().first][a->getPosition().second] = a->Figure();
-						}
-					}
-					//враги
-					else if (lambdaghost())
-					{
-						k = (*_pacman.begin())->getPosition().first;
-						m = (*_pacman.begin())->getPosition().second - 1;
-						for (auto a : _ghosts)
-						{
-							int x = a->getPosition().first;
-							int y = a->getPosition().second;
-							a->setSpeed(8);
-
-							if (k == x && m == y && a->getStatus() == 2)
-							{
-								(*_pacman.begin())->setPosition(k, m);
-								(*_pacman.begin())->setSpeed(10);
-								gameObjects_[k][m] = (*_pacman.begin())->Figure();
-								gameObjects_[k][m + 1] = (*_fields.begin())->Figure();
-								info_->Eat(200);
-
-								x = a->getStartPosition().first + 4;
-								y = a->getStartPosition().second;
-								a->setLowField((*_fields.begin())->Figure());
-								a->setPosition(x, y);
-								a->setStatus("CHASE");
-								a->setDoorPassed(false);
-								a->setDirection("UP");
-								gameObjects_[x][y] = a->Figure();
-							}
-							else if (k == x && m == y && a->getStatus() != 2)
-							{
-								info_->DecreaseHP();
-								gameObjects_[k][m] = (*_fields.begin())->Figure();
-								gameObjects_[k][m + 1] = (*_fields.begin())->Figure();
-								int q = (*_pacman.begin())->getStartPosition().first;
-								int w = (*_pacman.begin())->getStartPosition().second;
-								(*_pacman.begin())->setPosition(q, w);
-								(*_pacman.begin())->setSpeed(7);;
-								gameObjects_[q][w] = (*_pacman.begin())->Figure();
-								for (auto a : _ghosts)
-								{
-									int x = a->getStartPosition().first;
-									int y = a->getStartPosition().second;
-									int x1 = a->getPosition().first;
-									int y1 = a->getPosition().second;
-									gameObjects_[x1][y1] = a->getLowField();
-									a->setPosition(x, y);
-
-									if (a->getPrevState() == 0)
-										a->setStatus("SCATTER");
-									else
-										a->setStatus("CHASE");
-
-									a->setChaseCount(4);
-									a->setDoorPassed(false);
-									a->setDirection("LEFT");
-									gameObjects_[x][y] = a->Figure();
-								}
-							}
-						}
-					}
-					//фрукты
-					else if (lambdafruit())
-					{
-						for (auto a : _fruits)
-						{
-							if (a != nullptr && obj == a->Figure())
-							{
-								Fruits* fr = dynamic_cast<Fruits*>(a);
-								k = (*_pacman.begin())->getPosition().first;
-								m = (*_pacman.begin())->getPosition().second - 1;
-								if (std::make_pair(k, m) != a->getPosition()) continue;
-
-								(*_pacman.begin())->setPosition(k, m);
-								(*_pacman.begin())->setSpeed(7);;
-								gameObjects_[k][m] = (*_pacman.begin())->Figure();
-								gameObjects_[k][m + 1] = (*_fields.begin())->Figure();
-								info_->Eat(fr->CalculateScore(info_->currentlevel));
-								info_->addFruit(fr->Figure());
-								fr->Destroy();
-								auto it = std::find(_fruits.begin(), _fruits.end(), a);
-								*it = nullptr;
 								break;
 							}
 						}
 					}
-					return;
-				}
-			}
-			else
-			{
-				m = Y_SIZE - 1;
-				obj = gameObjects_[k][m];
-				//проход через тоннель
-				if (obj == (*_fields.begin())->Figure())
-				{
-					(*_pacman.begin())->setDirection(key);
-					(*_pacman.begin())->setPosition(k, m);
-					(*_pacman.begin())->setSpeed(10);;
-					gameObjects_[k][m] = (*_pacman.begin())->Figure();
-					gameObjects_[k][0] = (*_fields.begin())->Figure();
-				}
-				return;
-				//add ghosts collision
-			}
-		}
-		if (key == "RIGHT")
-		{
-			int k = (*_pacman.begin())->getPosition().first;
-			int m = (*_pacman.begin())->getPosition().second;
-			if (m != Y_SIZE - 1)
-			{
-				obj = gameObjects_[k][m + 1];
-
-				//стены
-				if (obj == (*_borders.begin())->Figure())
-				{
-					gameObjects_[k][m] = (*_pacman.begin())->Figure();
-				}
-				else
-				{
-
-					(*_pacman.begin())->setDirection(key);
-					if (obj == (*_fields.begin())->Figure())
+					else if (!_booster.empty() && obj == (*_booster.begin())->Figure()) //energizer
 					{
-						k = (*_pacman.begin())->getPosition().first;
-						m = (*_pacman.begin())->getPosition().second + 1;
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(10);;
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k][m - 1] = (*_fields.begin())->Figure();
-					}
-					//чеканные монеты
-					else if (obj == (*_coins.begin())->Figure())
-					{
-						k = (*_pacman.begin())->getPosition().first;
-						m = (*_pacman.begin())->getPosition().second + 1;
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(7);;
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k][m - 1] = (*_fields.begin())->Figure();
-						info_->Eat(10);
-						info_->totalcoins++;
-						info_->remaincoins--;
+						this->PacmanUpdate(k, m, k1, m1, 10);
+						info->Eat(50);
+						info->remainboosters--;
 
-						for (auto a : _coins)
+						for (auto it = _booster.begin(); it != _booster.end(); it++)
 						{
-							if (a->getPosition() == (*_pacman.begin())->getPosition())
+							if ((*it)->getPosition() == std::make_pair(k1, m1))
 							{
-								auto it = std::find(_coins.begin(), _coins.end(), a);
-								(*it)->Destroy();
-								_coins.erase(it);
-							}
-						}
-					}
-					//energizer
-					else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
-					{
-						k = (*_pacman.begin())->getPosition().first;
-						m = (*_pacman.begin())->getPosition().second + 1;
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(7);;
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k][m - 1] = (*_fields.begin())->Figure();
-						info_->Eat(50);
-						info_->remainboosters--;
-
-						for (auto a : _booster)
-						{
-							if (a->getPosition() == (*_pacman.begin())->getPosition())
-							{
-								auto it = std::find(_booster.begin(), _booster.end(), a);
 								(*it)->Destroy();
 								_booster.erase(it);
-							}
-						}
-						for (auto a : _ghosts)
-						{
-							a->setStatus("FRIGHTENED");
-							gameObjects_[a->getPosition().first][a->getPosition().second] = a->Figure();
-						}
-					}
-					//враги
-					else if (lambdaghost())
-					{
-						k = (*_pacman.begin())->getPosition().first;
-						m = (*_pacman.begin())->getPosition().second + 1;
-						for (auto a : _ghosts)
-						{
-							int x = a->getPosition().first;
-							int y = a->getPosition().second;
-							a->setSpeed(8);
-
-							if (k == x && m == y && a->getStatus() == 2)
-							{
-								(*_pacman.begin())->setPosition(k, m);
-								(*_pacman.begin())->setSpeed(7);
-								gameObjects_[k][m] = (*_pacman.begin())->Figure();
-								gameObjects_[k][m - 1] = (*_fields.begin())->Figure();
-								info_->Eat(200);
-
-								x = a->getStartPosition().first + 4;
-								y = a->getStartPosition().second;
-								a->setLowField((*_fields.begin())->Figure());
-								a->setPosition(x, y);
-								a->setStatus("CHASE");
-								a->setDoorPassed(false);
-								a->setDirection("UP");
-								gameObjects_[x][y] = a->Figure();
-							}
-							else if (k == x && m == y && a->getStatus() != 2)
-							{
-								info_->DecreaseHP();
-								gameObjects_[k][m] = (*_fields.begin())->Figure();
-								gameObjects_[k][m - 1] = (*_fields.begin())->Figure();
-								int q = (*_pacman.begin())->getStartPosition().first;
-								int w = (*_pacman.begin())->getStartPosition().second;
-								(*_pacman.begin())->setPosition(q, w);
-								(*_pacman.begin())->setSpeed(7);;
-								gameObjects_[q][w] = (*_pacman.begin())->Figure();
-								for (auto a : _ghosts)
-								{
-									int x = a->getStartPosition().first;
-									int y = a->getStartPosition().second;
-									int x1 = a->getPosition().first;
-									int y1 = a->getPosition().second;
-									gameObjects_[x1][y1] = a->getLowField();
-									a->setPosition(x, y);
-
-									if (a->getPrevState() == 0)
-										a->setStatus("SCATTER");
-									else
-										a->setStatus("CHASE");
-
-									a->setChaseCount(4);
-									a->setDoorPassed(false);
-									a->setDirection("LEFT");
-									gameObjects_[x][y] = a->Figure();
-								}
-							}
-						}
-					}
-					//фрукты
-					else if (lambdafruit())
-					{
-						for (auto a : _fruits)
-						{
-							if (a != nullptr && obj == a->Figure())
-							{
-								Fruits* fr = dynamic_cast<Fruits*>(a);
-								k = (*_pacman.begin())->getPosition().first;
-								m = (*_pacman.begin())->getPosition().second + 1;
-								if (std::make_pair(k, m) != a->getPosition()) continue;
-
-								(*_pacman.begin())->setPosition(k, m);
-								(*_pacman.begin())->setSpeed(7);;
-								gameObjects_[k][m] = (*_pacman.begin())->Figure();
-								gameObjects_[k][m - 1] = (*_fields.begin())->Figure();
-								info_->Eat(fr->CalculateScore(info_->currentlevel));
-								info_->addFruit(fr->Figure());
-								fr->Destroy();
-								auto it = std::find(_fruits.begin(), _fruits.end(), a);
-								*it = nullptr;
 								break;
 							}
 						}
-					}
-					return;
-				}
-			}
-			else
-			{
-				m = 0;
-				obj = gameObjects_[k][m];
-				//проход через тоннель
-				if (obj == (*_fields.begin())->Figure())
-				{
-					(*_pacman.begin())->setDirection(key);
-					(*_pacman.begin())->setPosition(k, m);
-					(*_pacman.begin())->setSpeed(10);;
-					gameObjects_[k][m] = (*_pacman.begin())->Figure();
-					gameObjects_[k][Y_SIZE - 1] = (*_fields.begin())->Figure();
-				}
-				return;
-				//add ghosts collision
-			}
-		}
-		if (key == "END")
-		{
-			quick_exit(0);
-		}
-
-		{
-			int dir = (*_pacman.begin())->getDirection();
-
-			if (dir == 0)//up
-			{
-				int k = (*_pacman.begin())->getPosition().first;
-				int m = (*_pacman.begin())->getPosition().second;
-				obj = gameObjects_[k - 1][m];
-
-				//стены
-				if (obj == (*_borders.begin())->Figure())
-				{
-					gameObjects_[k][m] = (*_pacman.begin())->Figure();
-				}
-				else
-				{
-					(*_pacman.begin())->setDirection("UP");
-					if (obj == (*_fields.begin())->Figure())
-					{
-						k = (*_pacman.begin())->getPosition().first - 1;
-						m = (*_pacman.begin())->getPosition().second;
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(10);
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k + 1][m] = (*_fields.begin())->Figure();
-					}
-					//чеканные монеты
-					else if (obj == (*_coins.begin())->Figure())
-					{
-						k = (*_pacman.begin())->getPosition().first - 1;
-						m = (*_pacman.begin())->getPosition().second;
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(7);
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k + 1][m] = (*_fields.begin())->Figure();
-						info_->Eat(10);
-						info_->totalcoins++;
-						info_->remaincoins--;
-
-						for (auto a : _coins)
+						for (auto it = _ghosts.begin(); it != _ghosts.end(); it++)
 						{
-							if (a->getPosition() == (*_pacman.begin())->getPosition())
-							{
-								auto it = std::find(_coins.begin(), _coins.end(), a);
-								(*it)->Destroy();
-								_coins.erase(it);
-							}
+							(*it)->setStatus("FRIGHTENED");
+							gameObjects_[(*it)->getPosition().first][(*it)->getPosition().second] = (*it)->Figure();
 						}
 					}
-					//energizer
-					else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
+					else if (lambdaghost()) // ghosts
 					{
-						k = (*_pacman.begin())->getPosition().first - 1;
-						m = (*_pacman.begin())->getPosition().second;
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(7);;
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k + 1][m] = (*_fields.begin())->Figure();
-						info_->Eat(50);
-						info_->remainboosters--;
-
-						for (auto a : _booster)
-						{
-							if (a->getPosition() == (*_pacman.begin())->getPosition())
-							{
-								auto it = std::find(_booster.begin(), _booster.end(), a);
-								(*it)->Destroy();
-								_booster.erase(it);
-							}
-						}
 						for (auto a : _ghosts)
 						{
-							a->setStatus("FRIGHTENED");
-							gameObjects_[a->getPosition().first][a->getPosition().second] = a->Figure();
-						}
-					}
-					//враги
-					else if (lambdaghost())
-					{
-						k = (*_pacman.begin())->getPosition().first - 1;
-						m = (*_pacman.begin())->getPosition().second;
-						for (auto a : _ghosts)
-						{
-							int x = a->getPosition().first;
-							int y = a->getPosition().second;
+							int gh_x = a->getPosition().first;
+							int gh_y = a->getPosition().second;
 							a->setSpeed(8);
 
-							if (k == x && m == y && a->getStatus() == 2)
+							if (k1 == gh_x && m1 == gh_y)
 							{
-								(*_pacman.begin())->setPosition(k, m);
-								(*_pacman.begin())->setSpeed(10);;
-								gameObjects_[k][m] = (*_pacman.begin())->Figure();
-								gameObjects_[k + 1][m] = (*_fields.begin())->Figure();
-								info_->Eat(200);
-
-								x = a->getStartPosition().first + 4;
-								y = a->getStartPosition().second;
-								a->setPosition(x, y);
-								a->setStatus("CHASE");
-								a->setDoorPassed(false);
-								a->setDirection("UP");
-								gameObjects_[x][y] = a->Figure();
-							}
-							else if (k == x && m == y && a->getStatus() != 2)
-							{
-								info_->DecreaseHP();
-								gameObjects_[k][m] = (*_fields.begin())->Figure();
-								gameObjects_[k + 1][m] = (*_fields.begin())->Figure();
-								int q = (*_pacman.begin())->getStartPosition().first;
-								int w = (*_pacman.begin())->getStartPosition().second;
-								(*_pacman.begin())->setPosition(q, w);
-								(*_pacman.begin())->setSpeed(7);;
-								gameObjects_[q][w] = (*_pacman.begin())->Figure();
-								for (auto a : _ghosts)
+								if (a->getStatus() == 2) //FRIGHTENED
 								{
-									int x = a->getStartPosition().first;
-									int y = a->getStartPosition().second;
-									int x1 = a->getPosition().first;
-									int y1 = a->getPosition().second;
-									gameObjects_[x1][y1] = a->getLowField();
-									a->setPosition(x, y);
+									this->PacmanUpdate(k, m, k1, m1, 10);
+									info->Eat(200);
 
-									if (a->getPrevState() == 0)
-										a->setStatus("SCATTER");
-									else
-										a->setStatus("CHASE");
+									if(a->getLowField() == (*_coins.begin())->Figure())
+									{
+										try 
+										{
+											for (auto it = _coins.begin(); it != _coins.end(); it++)
+											{
+												if ((*it)->getPosition() == std::make_pair(k1, m1))
+												{
+													(*it)->Destroy();
+													_coins.erase(it);
+													break;
+												}
+											}
+											info->Eat(10);
+											info->totalcoins++;
+											info->remaincoins--;
+										}
+										catch (...)
+										{
+										}
+									}
 
-									a->setChaseCount(4);
-									a->setDoorPassed(false);
-									a->setDirection("LEFT");
-									gameObjects_[x][y] = a->Figure();
-								}
-							}
-						}
-					}
-					//фрукты
-					else if (lambdafruit())
-					{
-						for (auto a : _fruits)
-						{
-							if (a != nullptr && obj == a->Figure())
-							{
-								Fruits* fr = dynamic_cast<Fruits*>(a);
-								k = (*_pacman.begin())->getPosition().first - 1;
-								m = (*_pacman.begin())->getPosition().second;
-								if (std::make_pair(k, m) != a->getPosition()) continue;
-
-								(*_pacman.begin())->setPosition(k, m);
-								(*_pacman.begin())->setSpeed(7);;
-								gameObjects_[k][m] = (*_pacman.begin())->Figure();
-								gameObjects_[k + 1][m] = (*_fields.begin())->Figure();
-								info_->Eat(fr->CalculateScore(info_->currentlevel));
-								info_->addFruit(fr->Figure());
-								fr->Destroy();
-								auto it = std::find(_fruits.begin(), _fruits.end(), a);
-								*it = nullptr;
-								break;
-							}
-						}
-					}
-				}
-			}
-			else if (dir == 1)//down
-			{
-				int k = (*_pacman.begin())->getPosition().first;
-				int m = (*_pacman.begin())->getPosition().second;
-				obj = gameObjects_[k + 1][m];
-
-				//стены
-				if (obj == (*_borders.begin())->Figure())
-				{
-					gameObjects_[k][m] = (*_pacman.begin())->Figure();
-				}
-				else
-				{
-					(*_pacman.begin())->setDirection("DOWN");
-					if (obj == (*_fields.begin())->Figure())
-					{
-						k = (*_pacman.begin())->getPosition().first + 1;
-						m = (*_pacman.begin())->getPosition().second;
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(10);;
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k - 1][m] = (*_fields.begin())->Figure();
-					}
-					//чеканные монеты
-					else if (obj == (*_coins.begin())->Figure())
-					{
-						k = (*_pacman.begin())->getPosition().first + 1;
-						m = (*_pacman.begin())->getPosition().second;
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(7);;
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k - 1][m] = (*_fields.begin())->Figure();
-						info_->Eat(10);
-						info_->totalcoins++;
-						info_->remaincoins--;
-
-						for (auto a : _coins)
-						{
-							if (a->getPosition() == (*_pacman.begin())->getPosition())
-							{
-								auto it = std::find(_coins.begin(), _coins.end(), a);
-								(*it)->Destroy();
-								_coins.erase(it);
-							}
-						}
-					}
-					//energizer
-					else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
-					{
-						k = (*_pacman.begin())->getPosition().first + 1;
-						m = (*_pacman.begin())->getPosition().second;
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(7);;
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k - 1][m] = (*_fields.begin())->Figure();
-						info_->Eat(50);
-						info_->remainboosters--;
-
-						for (auto a : _booster)
-						{
-							if (a->getPosition() == (*_pacman.begin())->getPosition())
-							{
-								auto it = std::find(_booster.begin(), _booster.end(), a);
-								(*it)->Destroy();
-								_booster.erase(it);
-							}
-						}
-						for (auto a : _ghosts)
-						{
-							a->setStatus("FRIGHTENED");
-							gameObjects_[a->getPosition().first][a->getPosition().second] = a->Figure();
-						}
-					}
-					//враги
-					else if (lambdaghost())
-					{
-						k = (*_pacman.begin())->getPosition().first + 1;
-						m = (*_pacman.begin())->getPosition().second;
-						for (auto a : _ghosts)
-						{
-							int x = a->getPosition().first;
-							int y = a->getPosition().second;
-							a->setSpeed(8);
-
-							if (k == x && m == y && a->getStatus() == 2)
-							{
-								(*_pacman.begin())->setPosition(k, m);
-								(*_pacman.begin())->setSpeed(10);;
-								gameObjects_[k][m] = (*_pacman.begin())->Figure();
-								gameObjects_[k - 1][m] = (*_fields.begin())->Figure();
-								info_->Eat(200);
-
-								x = a->getStartPosition().first + 4;
-								y = a->getStartPosition().second;
-								a->setPosition(x, y);
-								a->setStatus("CHASE");
-								a->setDoorPassed(false);
-								a->setDirection("UP");
-								gameObjects_[x][y] = a->Figure();
-							}
-							else if (k == x && m == y && a->getStatus() != 2)
-							{
-								info_->DecreaseHP();
-								gameObjects_[k][m] = (*_fields.begin())->Figure();
-								gameObjects_[k - 1][m] = (*_fields.begin())->Figure();
-								int q = (*_pacman.begin())->getStartPosition().first;
-								int w = (*_pacman.begin())->getStartPosition().second;
-								(*_pacman.begin())->setPosition(q, w);
-								(*_pacman.begin())->setSpeed(7);
-								gameObjects_[q][w] = (*_pacman.begin())->Figure();
-								for (auto a : _ghosts)
-								{
-									int x = a->getStartPosition().first;
-									int y = a->getStartPosition().second;
-									int x1 = a->getPosition().first;
-									int y1 = a->getPosition().second;
-									gameObjects_[x1][y1] = a->getLowField();
-									a->setPosition(x, y);
-
-									if (a->getPrevState() == 0)
-										a->setStatus("SCATTER");
-									else
-										a->setStatus("CHASE");
-
-									a->setChaseCount(4);
-									a->setDoorPassed(false);
-									a->setDirection("LEFT");
-									gameObjects_[x][y] = a->Figure();
-								}
-							}
-						}
-					}
-					//фрукты
-					else if (lambdafruit())
-					{
-						for (auto a : _fruits)
-						{
-							if (a != nullptr && obj == a->Figure())
-							{
-								Fruits* fr = dynamic_cast<Fruits*>(a);
-								k = (*_pacman.begin())->getPosition().first + 1;
-								m = (*_pacman.begin())->getPosition().second;
-								if (std::make_pair(k, m) != a->getPosition()) continue;
-
-								(*_pacman.begin())->setPosition(k, m);
-								(*_pacman.begin())->setSpeed(7);;
-								gameObjects_[k][m] = (*_pacman.begin())->Figure();
-								gameObjects_[k - 1][m] = (*_fields.begin())->Figure();
-								info_->Eat(fr->CalculateScore(info_->currentlevel));
-								info_->addFruit(fr->Figure());
-								fr->Destroy();
-								auto it = std::find(_fruits.begin(), _fruits.end(), a);
-								*it = nullptr;
-								break;
-							}
-						}
-					}
-				}
-			}
-			else if (dir == 2)//left
-			{
-				int k = (*_pacman.begin())->getPosition().first;
-				int m = (*_pacman.begin())->getPosition().second;
-
-				if (m)
-				{
-					obj = gameObjects_[k][m - 1];
-
-					//стены
-					if (obj == (*_borders.begin())->Figure())
-					{
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-					}
-					else
-					{
-						(*_pacman.begin())->setDirection("LEFT");
-						//проход по полям
-						if (obj == (*_fields.begin())->Figure())
-						{
-							k = (*_pacman.begin())->getPosition().first;
-							m = (*_pacman.begin())->getPosition().second - 1;
-							(*_pacman.begin())->setPosition(k, m);
-							(*_pacman.begin())->setSpeed(10);;
-							gameObjects_[k][m] = (*_pacman.begin())->Figure();
-							gameObjects_[k][m + 1] = (*_fields.begin())->Figure();
-						}
-						//чеканные монеты
-						else if (obj == (*_coins.begin())->Figure())
-						{
-							k = (*_pacman.begin())->getPosition().first;
-							m = (*_pacman.begin())->getPosition().second - 1;
-							(*_pacman.begin())->setPosition(k, m);
-							(*_pacman.begin())->setSpeed(7);;
-							gameObjects_[k][m] = (*_pacman.begin())->Figure();
-							gameObjects_[k][m + 1] = (*_fields.begin())->Figure();
-							info_->Eat(10);
-							info_->totalcoins++;
-							info_->remaincoins--;
-
-							for (auto a : _coins)
-							{
-								if (a->getPosition() == (*_pacman.begin())->getPosition())
-								{
-									auto it = std::find(_coins.begin(), _coins.end(), a);
-									(*it)->Destroy();
-									_coins.erase(it);
-								}
-							}
-						}
-						//energizer
-						else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
-						{
-							k = (*_pacman.begin())->getPosition().first;
-							m = (*_pacman.begin())->getPosition().second - 1;
-							(*_pacman.begin())->setPosition(k, m);
-							(*_pacman.begin())->setSpeed(7);;
-							gameObjects_[k][m] = (*_pacman.begin())->Figure();
-							gameObjects_[k][m + 1] = (*_fields.begin())->Figure();
-							info_->Eat(50);
-							info_->remainboosters--;
-
-							for (auto a : _booster)
-							{
-								if (a->getPosition() == (*_pacman.begin())->getPosition())
-								{
-									auto it = std::find(_booster.begin(), _booster.end(), a);
-									(*it)->Destroy();
-									_booster.erase(it);
-								}
-							}
-							for (auto a : _ghosts)
-							{
-								a->setStatus("FRIGHTENED");
-								gameObjects_[a->getPosition().first][a->getPosition().second] = a->Figure();
-							}
-						}
-						//враги
-						else if (lambdaghost())
-						{
-							k = (*_pacman.begin())->getPosition().first;
-							m = (*_pacman.begin())->getPosition().second - 1;
-							for (auto a : _ghosts)
-							{
-								int x = a->getPosition().first;
-								int y = a->getPosition().second;
-								a->setSpeed(8);
-
-								if (k == x && m == y && a->getStatus() == 2)
-								{
-									(*_pacman.begin())->setPosition(k, m);
-									(*_pacman.begin())->setSpeed(10);;
-									gameObjects_[k][m] = (*_pacman.begin())->Figure();
-									gameObjects_[k][m + 1] = (*_fields.begin())->Figure();
-									info_->Eat(200);
-
-									x = a->getStartPosition().first + 4;
-									y = a->getStartPosition().second;
-									a->setPosition(x, y);
+									gh_x = a->getDoorPosition().first + 3;
+									gh_y = a->getDoorPosition().second;
+									a->setLowField((*_fields.begin())->Figure());
+									a->setPosition(gh_x, gh_y);
 									a->setStatus("CHASE");
 									a->setDoorPassed(false);
 									a->setDirection("UP");
-									gameObjects_[x][y] = a->Figure();
+									gameObjects_[gh_x][gh_y] = a->Figure();
 								}
-								else if (k == x && m == y && a->getStatus() != 2)
+								else
 								{
-									info_->DecreaseHP();
+									info->DecreaseHP();
+									gameObjects_[k1][m1] = (*_fields.begin())->Figure();
 									gameObjects_[k][m] = (*_fields.begin())->Figure();
-									gameObjects_[k][m + 1] = (*_fields.begin())->Figure();
-									int q = (*_pacman.begin())->getStartPosition().first;
-									int w = (*_pacman.begin())->getStartPosition().second;
-									(*_pacman.begin())->setPosition(q, w);
-									(*_pacman.begin())->setSpeed(7);;
-									gameObjects_[q][w] = (*_pacman.begin())->Figure();
-									for (auto a : _ghosts)
+									int pac_x = (*_pacman.begin())->getStartPosition().first;
+									int pac_y = (*_pacman.begin())->getStartPosition().second;
+									(*_pacman.begin())->setPosition(pac_x, pac_y);
+									(*_pacman.begin())->setSpeed(10);
+									gameObjects_[pac_x][pac_y] = (*_pacman.begin())->Figure();
+
+									for (auto b : _ghosts)
 									{
-										int x = a->getStartPosition().first;
-										int y = a->getStartPosition().second;
-										int x1 = a->getPosition().first;
-										int y1 = a->getPosition().second;
-										gameObjects_[x1][y1] = a->getLowField();
-										a->setPosition(x, y);
+										gh_x = b->getStartPosition().first;
+										gh_y = b->getStartPosition().second;
+										int gh_x1 = b->getPosition().first;
+										int gh_y1 = b->getPosition().second;
+										gameObjects_[gh_x1][gh_y1] = b->getLowField();
+										b->setPosition(gh_x, gh_y);
 
-										if (a->getPrevState() == 0)
-											a->setStatus("SCATTER");
+										if (b->getPrevState() == 0) //CHASE
+											b->setStatus("SCATTER");
 										else
-											a->setStatus("CHASE");
+											b->setStatus("CHASE");
 
-										a->setChaseCount(4);
-										a->setDoorPassed(false);
-										a->setDirection("LEFT");
-										gameObjects_[x][y] = a->Figure();
+										b->setChaseCount(4);
+										b->setDoorPassed(false);
+										b->setDirection("LEFT");
+										gameObjects_[gh_x][gh_y] = b->Figure();
 									}
-								}
-							}
-						}
-						//фрукты
-						else if (lambdafruit())
-						{
-							for (auto a : _fruits)
-							{
-								if (a != nullptr && obj == a->Figure())
-								{
-									Fruits* fr = dynamic_cast<Fruits*>(a);
-									k = (*_pacman.begin())->getPosition().first;
-									m = (*_pacman.begin())->getPosition().second - 1;
-									if (std::make_pair(k, m) != a->getPosition()) continue;
-
-									(*_pacman.begin())->setPosition(k, m);
-									(*_pacman.begin())->setSpeed(7);;
-									gameObjects_[k][m] = (*_pacman.begin())->Figure();
-									gameObjects_[k][m + 1] = (*_fields.begin())->Figure();
-									info_->Eat(fr->CalculateScore(info_->currentlevel));
-									info_->addFruit(fr->Figure());
-									fr->Destroy();
-									auto it = std::find(_fruits.begin(), _fruits.end(), a);
-									*it = nullptr;
 									break;
 								}
 							}
 						}
-					}
-				}
-				else
-				{
-					m = Y_SIZE - 1;
-					obj = gameObjects_[k][m];
-					//проход через тоннель
-					if (obj == (*_fields.begin())->Figure())
+					}				
+					else if (lambdafruit()) //fruits
 					{
-						(*_pacman.begin())->setDirection("LEFT");
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(10);;
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k][0] = (*_fields.begin())->Figure();
-					}
-					//add ghosts collision
-				}
-			}
-			else if (dir == 3)//right
-			{
-				int k = (*_pacman.begin())->getPosition().first;
-				int m = (*_pacman.begin())->getPosition().second;
-				if (m != Y_SIZE - 1)
-				{
-					obj = gameObjects_[k][m + 1];
-					//стены
-					if (obj == (*_borders.begin())->Figure())
-					{
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-					}
-					else
-					{
-						(*_pacman.begin())->setDirection("RIGHT");
-						if (obj == (*_fields.begin())->Figure())
+						for (auto it = _fruits.begin(); it != _fruits.end(); it++)
 						{
-							k = (*_pacman.begin())->getPosition().first;
-							m = (*_pacman.begin())->getPosition().second + 1;
-							(*_pacman.begin())->setPosition(k, m);
-							(*_pacman.begin())->setSpeed(10);;
-							gameObjects_[k][m] = (*_pacman.begin())->Figure();
-							gameObjects_[k][m - 1] = (*_fields.begin())->Figure();
-						}
-						//чеканные монеты
-						else if (obj == (*_coins.begin())->Figure())
-						{
-							k = (*_pacman.begin())->getPosition().first;
-							m = (*_pacman.begin())->getPosition().second + 1;
-							(*_pacman.begin())->setPosition(k, m);
-							(*_pacman.begin())->setSpeed(7);;
-							gameObjects_[k][m] = (*_pacman.begin())->Figure();
-							gameObjects_[k][m - 1] = (*_fields.begin())->Figure();
-							info_->Eat(10);
-							info_->totalcoins++;
-							info_->remaincoins--;
-
-							for (auto a : _coins)
+							if ((*it) != nullptr && obj == (*it)->Figure())
 							{
-								if (a->getPosition() == (*_pacman.begin())->getPosition())
-								{
-									auto it = std::find(_coins.begin(), _coins.end(), a);
-									(*it)->Destroy();
-									_coins.erase(it);
-								}
-							}
-						}
-						//energizer
-						else if (!_booster.empty() && obj == (*_booster.begin())->Figure())
-						{
-							k = (*_pacman.begin())->getPosition().first;
-							m = (*_pacman.begin())->getPosition().second + 1;
-							(*_pacman.begin())->setPosition(k, m);
-							(*_pacman.begin())->setSpeed(7);;
-							gameObjects_[k][m] = (*_pacman.begin())->Figure();
-							gameObjects_[k][m - 1] = (*_fields.begin())->Figure();
-							info_->Eat(50);
-							info_->remainboosters--;
+								if(std::make_pair(k1, m1) != (*it)->getPosition()) continue;
 
-							for (auto a : _booster)
-							{
-								if (a->getPosition() == (*_pacman.begin())->getPosition())
-								{
-									auto it = std::find(_booster.begin(), _booster.end(), a);
-									(*it)->Destroy();
-									_booster.erase(it);
-								}
-							}
-							for (auto a : _ghosts)
-							{
-								a->setStatus("FRIGHTENED");
-								gameObjects_[a->getPosition().first][a->getPosition().second] = a->Figure();
-							}
-						}
-						//враги
-						else if (lambdaghost())
-						{
-							k = (*_pacman.begin())->getPosition().first;
-							m = (*_pacman.begin())->getPosition().second + 1;
-							for (auto a : _ghosts)
-							{
-								int x = a->getPosition().first;
-								int y = a->getPosition().second;
-								a->setSpeed(8);
-
-								if (k == x && m == y && a->getStatus() == 2)
-								{
-									(*_pacman.begin())->setPosition(k, m);
-									(*_pacman.begin())->setSpeed(7);;
-									gameObjects_[k][m] = (*_pacman.begin())->Figure();
-									gameObjects_[k][m - 1] = (*_fields.begin())->Figure();
-									info_->Eat(200);
-
-									x = a->getStartPosition().first + 4;
-									y = a->getStartPosition().second;
-									a->setPosition(x, y);
-									a->setStatus("CHASE");
-									a->setDoorPassed(false);
-									a->setDirection("UP");
-									gameObjects_[x][y] = a->Figure();
-								}
-								else if (k == x && m == y && a->getStatus() != 2)
-								{
-									info_->DecreaseHP();
-									gameObjects_[k][m] = (*_fields.begin())->Figure();
-									gameObjects_[k][m - 1] = (*_fields.begin())->Figure();
-									int q = (*_pacman.begin())->getStartPosition().first;
-									int w = (*_pacman.begin())->getStartPosition().second;
-									(*_pacman.begin())->setPosition(q, w);
-									(*_pacman.begin())->setSpeed(7);;
-									gameObjects_[q][w] = (*_pacman.begin())->Figure();
-									for (auto a : _ghosts)
-									{
-										int x = a->getStartPosition().first;
-										int y = a->getStartPosition().second;
-										int x1 = a->getPosition().first;
-										int y1 = a->getPosition().second;
-										gameObjects_[x1][y1] = a->getLowField();
-										a->setPosition(x, y);
-
-										if (a->getPrevState() == 0)
-											a->setStatus("SCATTER");
-										else
-											a->setStatus("CHASE");
-
-										a->setChaseCount(4);
-										a->setDoorPassed(false);
-										a->setDirection("LEFT");
-										gameObjects_[x][y] = a->Figure();
-									}
-								}
-							}
-						}
-						//фрукты
-						else if (lambdafruit())
-						{
-							for (auto a : _fruits)
-							{
-								if (a != nullptr && obj == a->Figure())
-								{
-									Fruits* fr = dynamic_cast<Fruits*>(a);
-									k = (*_pacman.begin())->getPosition().first;
-									m = (*_pacman.begin())->getPosition().second + 1;
-									if (std::make_pair(k, m) != a->getPosition()) continue;
-
-									(*_pacman.begin())->setPosition(k, m);
-									(*_pacman.begin())->setSpeed(7);;
-									gameObjects_[k][m] = (*_pacman.begin())->Figure();
-									gameObjects_[k][m - 1] = (*_fields.begin())->Figure();
-									info_->Eat(fr->CalculateScore(info_->currentlevel));
-									info_->addFruit(fr->Figure());
-									fr->Destroy();
-									auto it = std::find(_fruits.begin(), _fruits.end(), a);
-									*it = nullptr;
-									break;
-								}
+								this->PacmanUpdate(k, m, k1, m1, 10);
+								info->Eat((*it)->CalculateScore(info->currentlevel));
+								info->addFruit((*it)->Figure());
+								(*it)->Destroy();
+								*it = nullptr;
+								break;
 							}
 						}
 					}
-				}
-				else
-				{
-					m = 0;
-					obj = gameObjects_[k][m];
-					//проход через тоннель
-					if (obj == (*_fields.begin())->Figure())
-					{
-						(*_pacman.begin())->setDirection("RIGHT");
-						(*_pacman.begin())->setPosition(k, m);
-						(*_pacman.begin())->setSpeed(10);;
-						gameObjects_[k][m] = (*_pacman.begin())->Figure();
-						gameObjects_[k][Y_SIZE - 1] = (*_fields.begin())->Figure();
-					}
-					//add ghosts collision
 				}
 			}
 			else
 			{
-				return;
+				continue;
 			}
+			return;
 		}
 	}
+}
+
+void Controller::PacmanUpdate(int old_x, int old_y, int new_x, int new_y, int speed)
+{
+	(*_pacman.begin())->setPosition(new_x, new_y);
+	(*_pacman.begin())->setSpeed(speed);
+	gameObjects_[new_x][new_y] = (*_pacman.begin())->Figure();
+	gameObjects_[old_x][old_y] = (*_fields.begin())->Figure();
 }
 
 void Controller::GhostsActions()
@@ -1573,12 +437,12 @@ void Controller::GhostsActions()
 	for (auto a : _ghosts)
 	{
 		a->UpdateDeltaTime();
-		if (a->StartCondition(info_))
+		if (a->StartCondition(*info))
 		{
 			if (a->Update())
 			{
 				a->CheckMode();
-				std::pair<int, int> p1 = a->getPosition();//old position		
+				std::pair<int, int> p1 = a->getPosition();//old position
 				a->setTarget((*_pacman.begin()));
 				std::pair<int, int> p2 = a->Go();//future position
 				gameObjects_[p1.first][p1.second] = a->getLowField();
@@ -1591,23 +455,44 @@ void Controller::GhostsActions()
 				{
 					if (a->getStatus() == 2)
 					{
-						int x = a->getStartPosition().first + 4;
-						int y = a->getStartPosition().second;
+						int gh_x = a->getDoorPosition().first + 3;
+						int gh_y = a->getDoorPosition().second;
 
 						gameObjects_[p2.first][p2.second] = (*_pacman.begin())->Figure();
-						a->setLowField(gameObjects_[x][y]);
-						info_->Eat(200);//fix
+						info->Eat(200);//fix
+
+						if (a->getLowField() == (*_coins.begin())->Figure())
+						{
+							try
+							{
+								for (auto b : _coins)
+								{
+									if (b->getPosition() == std::make_pair(p2.first, p2.second))
+									{
+										auto it = std::find(_coins.begin(), _coins.end(), b);
+										(*it)->Destroy();
+										_coins.erase(it);
+									}
+								}
+								info->Eat(10);
+								info->totalcoins++;
+								info->remaincoins--;
+							}
+							catch (...)
+							{
+							}
+						}
 
 						a->setLowField((*_fields.begin())->Figure());
-						a->setPosition(x, y);//fix start position
+						a->setPosition(gh_x, gh_y);
 						a->setStatus("CHASE");
 						a->setDoorPassed(false);
 						a->setDirection("UP");
-						gameObjects_[x][y] = a->Figure();
+						gameObjects_[gh_x][gh_y] = a->Figure();
 					}
 					else
 					{
-						info_->DecreaseHP();
+						info->DecreaseHP();
 						gameObjects_[p2.first][p2.second] = (*_fields.begin())->Figure();
 
 						int q = (*_pacman.begin())->getStartPosition().first;
@@ -1622,7 +507,7 @@ void Controller::GhostsActions()
 							int y1 = b->getPosition().second;
 							gameObjects_[x1][y1] = b->getLowField();
 
-							b->setLowField(gameObjects_[x][y]);
+							b->setLowField((*_fields.begin())->Figure());
 							b->setPosition(x, y);
 
 							if(b->getPrevState() == 0)
@@ -1640,7 +525,64 @@ void Controller::GhostsActions()
 				}
 				else
 				{
-					a->setLowField(gameObjects_[p2.first][p2.second]);
+					bool flag = false;
+					for (auto it = _coins.begin(); it != _coins.end(); it++)
+					{
+						if ((*it)->getPosition() == std::make_pair(p2.first, p2.second))
+						{
+							a->setLowField((*it)->Figure());
+							flag = true;
+							break;
+						}
+					}
+					if (!flag)
+					{
+						for (auto it = _fruits.begin(); it != _fruits.end(); it++)
+						{
+							if ((*it) != nullptr)
+							{
+								if ((*it)->getPosition() == std::make_pair(p2.first, p2.second))
+								{
+									a->setLowField((*it)->Figure());
+									flag = true;
+									break;
+								}
+							}
+						}
+					}
+					if (!flag)
+					{
+						if (a->getDoorPosition() == std::make_pair(p2.first, p2.second))
+						{
+							a->setLowField(a->getDoorFigure());
+							flag = true;
+						}
+					}
+					if (!flag)
+					{
+						for (auto it = _booster.begin(); it != _booster.end(); it++)
+						{
+							if ((*it)->getPosition() == std::make_pair(p2.first, p2.second))
+							{
+								a->setLowField((*it)->Figure());
+								flag = true;
+								break;
+							}
+						}
+					}
+					if (!flag)
+					{
+						for (auto it = _fields.begin(); it != _fields.end(); it++)
+						{
+							if ((*it)->getPosition() == std::make_pair(p2.first, p2.second))
+							{
+								a->setLowField((*it)->Figure());
+								flag = true;
+								break;
+							}
+						}
+					}
+
 					gameObjects_[p2.first][p2.second] = a->Figure();
 				}
 			}
@@ -1650,13 +592,13 @@ void Controller::GhostsActions()
 
 void Controller::UpdateFruits()
 {
-	if (info_->totalcoins == 70 && _fruits[0] == nullptr)
+	if (info->totalcoins == 7 && _fruits[0] == nullptr)
 	{
 		_fruits[0] = new Fruits();
 		_fruits[0]->setPosition(17, 13);
 		gameObjects_[_fruits[0]->getPosition().first][_fruits[0]->getPosition().second] = _fruits[0]->Figure();
 	}
-	if (info_->totalcoins == 170 && _fruits[1] == nullptr)
+	if (info->totalcoins == 17 && _fruits[1] == nullptr)
 	{
 		_fruits[1] = new Fruits();
 		_fruits[1]->setPosition(17, 14);
@@ -1667,11 +609,11 @@ void Controller::UpdateFruits()
 void Controller::Run()
 {
 	//Menu();
-	for (; info_->currentlevel < info_->MAX_LEVEL; info_->currentlevel++)
+	for (; info->currentlevel < info->MAX_LEVEL; info->currentlevel++)
 	{
 		system("cls");
 		this->Start();
-		while (!info_->getCheckLevel())
+		while (!info->getCheckLevel())
 		{
 			CheckAlive();
 			key = this->Input();
@@ -1693,5 +635,5 @@ void Controller::GlobalCleaning()
 	_booster.clear();
 	_fruits.clear();
 	_ghosts.clear();
-	info_->setCheckLevel(false, false);
+	info->setCheckLevel(false, false);
 }

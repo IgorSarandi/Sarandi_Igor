@@ -43,9 +43,10 @@ private:
 	std::vector<Fruits*> _fruits;//5
 	std::vector<Ghosts*> _ghosts;//6
 
+	void PacmanUpdate(int, int, int, int, int);
 	void PacmanActions();
 	void GhostsActions();
 	void UpdateFruits();
-	std::string key = "NULL";
+	int key = INT_MAX;
 };
 

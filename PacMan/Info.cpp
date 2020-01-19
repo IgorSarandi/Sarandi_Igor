@@ -3,7 +3,7 @@
 
 
 Info::Info(unsigned int am, unsigned char curlvl, unsigned int totc, unsigned int remc, unsigned int remb) :
-	AMOUNT(am), currentlevel(curlvl), totalcoins(totc), remaincoins(remc), remainboosters(remb), MAX_LEVEL(CHAR_MAX), checklvl_(false), score_(0)
+	AMOUNT(am), currentlevel(curlvl), totalcoins(totc), remaincoins(remc), remainboosters(remb), MAX_LEVEL(UCHAR_MAX), checklvl_(false), score_(0)
 {
 	this->setHealth(3);
 }

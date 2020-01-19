@@ -29,6 +29,8 @@ public:
 
 	void UpdateLand(std::vector<std::vector<int>>);
 
+	const std::map<std::string, int>& getAllDirections() const;
+
 protected:
 	const std::map<std::string, int> directions;
 	std::vector<std::vector<int>> land_;

@@ -1,8 +1,8 @@
 #pragma once
 #include "MovingObjects.h"
 #include "MotionlessObjects.h"
-#include "Info.h"
 #include "Pacman.h"
+#include "Info.h"
 
 #include <string>
 #include <map>
@@ -44,17 +44,24 @@ public:
 
 	int getPrevState() const;
 
+	std::pair<int, int> getDoorPosition() const;
+
+	std::pair<int, int> getDoorFigure() const;
+
 	virtual void setTarget(Pacman*) = 0;
 
+	virtual void Character();
+
+	virtual bool StartCondition(const Info&);//exit from house
+
+	virtual void setCoins(const Info &);
+
 	virtual std::pair<int, int> getTarget() const = 0;
-
-	virtual void Character() = 0;
-
-	virtual bool StartCondition(Info*) = 0;//exit from house
 
 protected:
 	const std::map<std::string, int> status;
 	const std::pair<int, int> doorCoord_;
+	const std::pair<char, int> doorFigure_;
 	std::pair<int, int> pacmanTarget;
 
 private:
