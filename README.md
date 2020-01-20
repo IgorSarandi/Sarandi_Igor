@@ -16,5 +16,10 @@ Program created with used OOP and patterns.
 Pacman also can go through the borders of map in tunnel. 
 In this case, he will be pass to other side.
 
+## Game versions
+
+Pacman.exe its original game.
+PacmanLite.exe its easy game, when victory conditions its eat 4 boosters.
+
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
