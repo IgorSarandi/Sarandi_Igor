@@ -2,7 +2,6 @@
 #include "Ghosts.h"
 #include "Info.h"
 #include "Pacman.h"
-#include "Blinky.h"
 
 class Blinky :
 	public Ghosts

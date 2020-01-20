@@ -2,6 +2,7 @@
 #include "Blinky.h"
 #include "Pinky.h"
 #include "Inky.h"
+#include "Clyde.h"
 #include <thread>
 
 Controller::Controller(int sizeX, int sizeY) : BaseController(sizeX, sizeY)
@@ -102,7 +103,7 @@ void Controller::Start()
 	}
 
 	Blinky* blinky = new Blinky();
-	blinky->setSpeed(8);
+	blinky->setSpeed(6);
 	blinky->setDoorPassed(true);
 	blinky->setStartPosition(11, 14);
 	blinky->setPosition(blinky->getStartPosition().first, blinky->getStartPosition().second);
@@ -115,7 +116,7 @@ void Controller::Start()
 	_ghosts.push_back(blinky);
 
 	Pinky* pinky = new Pinky();
-	pinky->setSpeed(8);
+	pinky->setSpeed(6);
 	pinky->setDoorPassed(false);
 	pinky->setStartPosition(14, 14);
 	pinky->setPosition(pinky->getStartPosition().first, pinky->getStartPosition().second);
@@ -128,7 +129,7 @@ void Controller::Start()
 	_ghosts.push_back(pinky);
 
 	Inky* inky = new Inky(*blinky);
-	inky->setSpeed(8);
+	inky->setSpeed(6);
 	inky->setDoorPassed(false);
 	inky->setStartPosition(14, 11);
 	inky->setPosition(inky->getStartPosition().first, inky->getStartPosition().second);
@@ -140,6 +141,18 @@ void Controller::Start()
 	gameObjects_[inky->getPosition().first][inky->getPosition().second] = inky->Figure();
 	_ghosts.push_back(inky);
 
+	Clyde* clyde = new Clyde();
+	clyde->setSpeed(6);
+	clyde->setDoorPassed(false);
+	clyde->setStartPosition(14, 16);
+	clyde->setPosition(clyde->getStartPosition().first, clyde->getStartPosition().second);
+	clyde->UpdateLand(crMap->globalMap());
+	clyde->setStatus("SCATTER");
+	clyde->setDirection("LEFT");
+	clyde->setLowField((*_fields.begin())->Figure());
+	clyde->setTargetField(std::make_pair(X_SIZE - 1, 0));
+	gameObjects_[clyde->getPosition().first][clyde->getPosition().second] = clyde->Figure();
+	_ghosts.push_back(clyde);
 
 	_fruits.resize(2);
 
@@ -148,6 +161,7 @@ void Controller::Start()
 	info->totalcoins = 0;
 
 	inky->setCoins(*info);
+	clyde->setCoins(*info);
 }
 
 void Controller::CheckAlive()
@@ -168,9 +182,9 @@ void Controller::Logic()
 	this->PacmanActions();
 	this->UpdateFruits();
 	this->GhostsActions();
-	this->info->setCheckLevel(_coins.empty(), _booster.empty());
-	/*if(_booster.size() < 1)
-		this->info->setCheckLevel(true, true);*/
+	//this->info->setCheckLevel(_coins.empty(), _booster.empty());
+	if(_booster.size() < 1)
+		this->info->setCheckLevel(true, true);
 }
 
 void Controller::PacmanActions()
@@ -321,7 +335,7 @@ void Controller::PacmanActions()
 						{
 							int gh_x = a->getPosition().first;
 							int gh_y = a->getPosition().second;
-							a->setSpeed(8);
+							a->setSpeed(6);
 
 							if (k1 == gh_x && m1 == gh_y)
 							{
@@ -378,6 +392,7 @@ void Controller::PacmanActions()
 										gh_y = b->getStartPosition().second;
 										int gh_x1 = b->getPosition().first;
 										int gh_y1 = b->getPosition().second;
+										b->setLowField((*_fields.begin())->Figure());
 										gameObjects_[gh_x1][gh_y1] = b->getLowField();
 										b->setPosition(gh_x, gh_y);
 
@@ -449,7 +464,7 @@ void Controller::GhostsActions()
 				int status = a->getStatus();
 				a->setPosition(p2.first, p2.second);
 
-				status == 2 ? a->setSpeed(5) : a->setSpeed(8);
+				status == 2 ? a->setSpeed(3) : a->setSpeed(6);
 
 				if (a->CheckPacman((*_pacman.begin())->getPosition()))
 				{
@@ -505,9 +520,9 @@ void Controller::GhostsActions()
 							int y = b->getStartPosition().second;
 							int x1 = b->getPosition().first;
 							int y1 = b->getPosition().second;
+							b->setLowField((*_fields.begin())->Figure());
 							gameObjects_[x1][y1] = b->getLowField();
 
-							b->setLowField((*_fields.begin())->Figure());
 							b->setPosition(x, y);
 
 							if(b->getPrevState() == 0)
@@ -585,6 +600,17 @@ void Controller::GhostsActions()
 
 					gameObjects_[p2.first][p2.second] = a->Figure();
 				}
+			}
+		}
+		else
+		{
+			if (a->Update())
+			{
+				std::pair<int, int> p1 = a->getPosition();//old position
+				a->HomeMode();
+				std::pair<int, int> p2 = a->getPosition();//future position
+				gameObjects_[p1.first][p1.second] = (*_fields.begin())->Figure();
+				gameObjects_[p2.first][p2.second] = a->Figure();
 			}
 		}
 	}

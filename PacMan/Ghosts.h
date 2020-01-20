@@ -48,6 +48,8 @@ public:
 
 	std::pair<int, int> getDoorFigure() const;
 
+	void HomeMode();
+
 	virtual void setTarget(Pacman*) = 0;
 
 	virtual void Character();

@@ -1,15 +1,11 @@
 #pragma once
 #include "Ghosts.h"
-#include "Info.h"
-#include "Pacman.h"
-#include "Blinky.h"
-
-class Inky :
+class Clyde :
 	public Ghosts
 {
 public:
-	Inky(const Blinky&);
-	~Inky(); 
+	Clyde();
+	~Clyde(); 
 	
 	std::pair<char, int> Figure() override;
 
@@ -22,7 +18,6 @@ public:
 	std::pair<int, int> getTarget() const override;
 
 private:
-	const Blinky & blinky_;
 	int startcoins_;
 	int coins_;
 };

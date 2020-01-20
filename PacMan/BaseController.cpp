@@ -51,14 +51,8 @@ int BaseController::Input()
 
 
 
-void BaseController::Draw(std::vector<std::vector<std::pair<char, int>>>& objects)//fix
+void BaseController::Draw(std::vector<std::vector<std::pair<char, int>>>& objects)
 {
-	/*HANDLE hc = GetStdHandle(STD_OUTPUT_HANDLE);
-	for (int k = 1; k < 255; k++)
-	{
-		SetConsoleTextAttribute(hc, k);
-		std::cout << k << " Hello world!" << std::endl;
-	}*/
 	SetConsoleWindowInfo(hConsole_, true, &src_);
 	SetConsoleScreenBufferSize(hConsole_, bufferSize_);
 	SetConsoleTitle("Pac-man");

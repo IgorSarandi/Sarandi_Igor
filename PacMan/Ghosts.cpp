@@ -98,7 +98,7 @@ void Ghosts::setLowField(std::pair<char, int> lowfield)
 	lowfield_ = lowfield;
 }
 
-std::pair<int, int> Ghosts::FindTargetDirect(std::pair<int, int> target)//fix
+std::pair<int, int> Ghosts::FindTargetDirect(std::pair<int, int> target)
 {
 	int x = target.first;
 	int y = target.second;
@@ -320,7 +320,7 @@ std::pair<int, int> Ghosts::Go()
 	}
 }
 
-void Ghosts::CheckMode()//fix
+void Ghosts::CheckMode()
 {
 	int state = this->getStatus();
 	std::chrono::time_point<std::chrono::steady_clock> currenttime = this->getPresentTime();
@@ -331,7 +331,7 @@ void Ghosts::CheckMode()//fix
 	case 0://CHASE
 		if (chasecount_ > 0)
 		{
-			if (deltatime_ >= 3)//20
+			if (deltatime_ >= 20)
 			{
 				this->setStatus("SCATTER");
 			}
@@ -340,7 +340,7 @@ void Ghosts::CheckMode()//fix
 	case 1://SCATTER
 		if (chasecount_ > 2)
 		{
-			if (deltatime_ >= 3)//7
+			if (deltatime_ >= 7)
 			{
 				this->setStatus("CHASE");
 				chasecount_--;
@@ -349,7 +349,7 @@ void Ghosts::CheckMode()//fix
 		}
 		if (chasecount_ > 0)
 		{
-			if (deltatime_ >= 3)//5
+			if (deltatime_ >= 5)
 			{
 				this->setStatus("CHASE");
 				chasecount_--;
@@ -398,6 +398,52 @@ std::pair<int, int> Ghosts::getDoorPosition() const
 std::pair<int, int> Ghosts::getDoorFigure() const
 {
 	return doorFigure_;
+}
+
+void Ghosts::HomeMode()
+{
+	int dir = this->getDirection();
+	std::pair<int, int> pos = this->getPosition();
+
+	if (dir == 0)
+	{
+		if (land_[pos.first - 1][pos.second] != 0)
+		{
+			this->setPosition(pos.first - 1, pos.second);
+		}
+		else
+		{
+			this->setPosition(pos.first + 1, pos.second);
+			this->setDirection("DOWN");
+		}
+	}
+	else if (dir == 1)
+	{
+		if (land_[pos.first + 1][pos.second] != 0)
+		{
+			this->setPosition(pos.first + 1, pos.second);
+		}
+		else
+		{
+			this->setPosition(pos.first - 1, pos.second);
+			this->setDirection("UP");
+		}
+	}
+	else
+	{
+		this->setDirection("UP");
+
+		if (land_[pos.first - 1][pos.second] != 0)
+		{
+			this->setPosition(pos.first - 1, pos.second);
+			this->setDirection("UP");
+		}
+		else
+		{
+			this->setPosition(pos.first + 1, pos.second);
+			this->setDirection("DOWN");
+		}
+	}
 }
 
 void Ghosts::Character()
