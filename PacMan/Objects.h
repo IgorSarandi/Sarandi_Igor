@@ -8,12 +8,12 @@ public:
 
 	void Destroy();
 
-	std::pair<int, int> getPosition() const; //get object position
+	std::pair<int, int> getPosition() const;
 
-	void setPosition(int, int); //set object position
+	void setPosition(int, int);
 
 	virtual std::pair<char, int> Figure() = 0; //object picture, where CHAR is display symbol, INT is color
 private:
-	std::pair<int, int> position_; //object coordinates
+	std::pair<int, int> position_;
 };
 
