@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="PacMan"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="PacMan">
+				<Option output="/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/PacMan" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/igor/Dev/GitProjects/PacMan_v2.0/."/>
+					<Add directory="/usr/include/c++/7"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
+					<Add directory="/usr/include/c++/7/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 PacMan"/>
+					<CompileFile command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="PacMan/fast">
+				<Option output="/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/PacMan" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/igor/Dev/GitProjects/PacMan_v2.0/."/>
+					<Add directory="/usr/include/c++/7"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
+					<Add directory="/usr/include/c++/7/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 PacMan/fast"/>
+					<CompileFile command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j2 -f &quot;/home/igor/Dev/GitProjects/PacMan_v2.0/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/BaseController.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/BaseController.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Blinky.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Blinky.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Booster.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Booster.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Border.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Border.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Clyde.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Clyde.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Coins.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Coins.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Controller.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Controller.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/CreateMap.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/CreateMap.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Field.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Field.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Fruits.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Fruits.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Ghosts.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Ghosts.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Info.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Info.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Inky.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Inky.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/MotionlessObjects.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/MotionlessObjects.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/MovingObjects.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/MovingObjects.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Objects.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Objects.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Pacman.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Pacman.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Pinky.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/Pinky.h">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/main.cpp">
+			<Option target="PacMan"/>
+		</Unit>
+		<Unit filename="/home/igor/Dev/GitProjects/PacMan_v2.0/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>
