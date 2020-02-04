@@ -1,3 +1,0 @@
-/home/igor/Dev/GitProjects/PacMan/Sarandi_Igor/PacMan/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/igor/Dev/GitProjects/PacMan/Sarandi_Igor/PacMan/cmake-build-debug/CMakeFiles/PacMan.dir
-/home/igor/Dev/GitProjects/PacMan/Sarandi_Igor/PacMan/cmake-build-debug/CMakeFiles/edit_cache.dir
